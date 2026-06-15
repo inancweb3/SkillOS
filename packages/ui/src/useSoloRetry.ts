@@ -107,6 +107,7 @@ import {
 } from "@skillos/contracts";
 import { useSkillOSDataSuffix } from "@skillos/sdk/react";
 import { parseWalletError } from "./utils";
+import { apiUrl } from "./apiUrl";
 import {
   EXTENSION_PROFILE_HEADER,
   type ExtensionProfile,
@@ -297,7 +298,7 @@ async function postSolo(params: {
   }
   let res: Response;
   try {
-    res = await fetch(`/api/tournaments/${params.tournamentDbId}/solo`, {
+    res = await fetch(apiUrl(`/api/tournaments/${params.tournamentDbId}/solo`), {
       method: "POST",
       headers,
       body: JSON.stringify(params.body),

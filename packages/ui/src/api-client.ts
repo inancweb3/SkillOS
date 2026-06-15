@@ -12,6 +12,7 @@ import type {
   MatchObject,
   SubmitResponse,
 } from "@skillos/game-types";
+import { apiUrl } from "./apiUrl";
 
 export type { ApiError, MatchObject, SubmitResponse } from "@skillos/game-types";
 export type { DuelStatus, PlayerSlot } from "@skillos/game-types";
@@ -48,7 +49,7 @@ export async function queueAsCreator(body: {
   matchId: string;
   createTxHash: Hex;
 }): Promise<MatchObject> {
-  const res = await fetch("/api/duel/queue", {
+  const res = await fetch(apiUrl("/api/duel/queue"), {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
@@ -64,7 +65,7 @@ export async function queueAsCreator(body: {
 export async function matchAsChallenger(body: {
   address: Address;
 }): Promise<MatchObject> {
-  const res = await fetch("/api/duel/queue", {
+  const res = await fetch(apiUrl("/api/duel/queue"), {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
@@ -79,7 +80,7 @@ export async function postAcceptTx(body: {
   matchId: string;
   acceptTxHash: Hex;
 }): Promise<{ ok: true; matchId: string; acceptTxHash: Hex }> {
-  const res = await fetch("/api/duel/queue/accept-tx", {
+  const res = await fetch(apiUrl("/api/duel/queue/accept-tx"), {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
@@ -91,7 +92,7 @@ export async function postAcceptTx(body: {
 
 export async function getMatchStatus(matchId: string): Promise<MatchObject> {
   const res = await fetch(
-    `/api/duel/status?matchId=${encodeURIComponent(matchId)}`,
+    apiUrl(`/api/duel/status?matchId=${encodeURIComponent(matchId)}`),
   );
   return parseResponse<MatchObject>(res, "status");
 }
@@ -100,7 +101,7 @@ export async function getMatchByAddress(
   address: Address,
 ): Promise<MatchObject> {
   const res = await fetch(
-    `/api/duel/status?address=${encodeURIComponent(address)}`,
+    apiUrl(`/api/duel/status?address=${encodeURIComponent(address)}`),
   );
   return parseResponse<MatchObject>(res, "status");
 }
@@ -116,7 +117,7 @@ export async function submitScore(body: {
   address: Address;
   score: number;
 }): Promise<SubmitResponse> {
-  const res = await fetch("/api/duel/submit", {
+  const res = await fetch(apiUrl("/api/duel/submit"), {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),

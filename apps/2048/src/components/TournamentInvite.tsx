@@ -14,6 +14,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { apiUrl } from "@skillos/ui";
 
 type Tournament = {
   id: string;
@@ -37,7 +38,7 @@ type SubmitResponse = {
 };
 
 async function fetchActive(): Promise<ActiveResponse> {
-  const res = await fetch("/api/tournaments", { cache: "no-store" });
+  const res = await fetch(apiUrl("/api/tournaments"), { cache: "no-store" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return (await res.json()) as ActiveResponse;
 }
@@ -49,7 +50,7 @@ async function submitToTournament(input: {
   score: number;
 }): Promise<SubmitResponse> {
   const res = await fetch(
-    `/api/tournaments/${input.tournamentId}/submit`,
+    apiUrl(`/api/tournaments/${input.tournamentId}/submit`),
     {
       method: "POST",
       headers: { "content-type": "application/json" },

@@ -10,6 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAccount } from "wagmi";
 import {
   AddressDisplay,
+  apiUrl,
   ExclusionTooltip,
   TournamentClassPill,
 } from "@skillos/ui";
@@ -45,7 +46,7 @@ type LeaderboardEntry = {
 async function fetchDetail(
   id: string,
 ): Promise<{ tournament: Tournament; leaderboard: LeaderboardEntry[] }> {
-  const res = await fetch(`/api/tournaments/${id}`, { cache: "no-store" });
+  const res = await fetch(apiUrl(`/api/tournaments/${id}`), { cache: "no-store" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return await res.json();
 }

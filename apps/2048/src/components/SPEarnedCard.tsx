@@ -25,6 +25,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import { apiUrl } from "@skillos/ui";
 
 type CardVerdict = "plausible" | "suspicious" | "implausible" | "pending";
 type EventKind = "duel_win" | "duel_loss" | "solo_submit" | "tournament_rank_bonus";
@@ -64,7 +65,7 @@ async function fetchSPEarned(
   player: string,
 ): Promise<SPEarnedDTO> {
   const qs = new URLSearchParams({ kind, id: sourceId, player });
-  const res = await fetch(`/api/sp-earned?${qs.toString()}`);
+  const res = await fetch(apiUrl(`/api/sp-earned?${qs.toString()}`));
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return (await res.json()) as SPEarnedDTO;
 }
