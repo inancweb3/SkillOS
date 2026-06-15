@@ -25,7 +25,7 @@
 
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ANTICHEAT_MODEL_DISPLAY } from "@skillos/ui";
+import { ANTICHEAT_MODEL_DISPLAY, apiUrl } from "@skillos/ui";
 
 type PlausibilityStatus =
   | { status: "pending" }
@@ -44,7 +44,7 @@ async function fetchPlausibility(
     context === "solo"
       ? `/api/tournaments/solo/${matchId}/plausibility`
       : `/api/duel/${matchId}/plausibility`;
-  const res = await fetch(url);
+  const res = await fetch(apiUrl(url));
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return (await res.json()) as PlausibilityStatus;
 }

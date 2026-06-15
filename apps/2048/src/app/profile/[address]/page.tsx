@@ -12,7 +12,7 @@ import { use } from "react";
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { AddressDisplay, basescanAddress } from "@skillos/ui";
+import { AddressDisplay, apiUrl, basescanAddress } from "@skillos/ui";
 
 type Verdict = "plausible" | "suspicious" | "implausible";
 
@@ -57,7 +57,7 @@ type ProfileDTO = {
 };
 
 async function fetchProfile(address: string): Promise<ProfileDTO> {
-  const res = await fetch(`/api/profile/${address}`, { cache: "no-store" });
+  const res = await fetch(apiUrl(`/api/profile/${address}`), { cache: "no-store" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return await res.json();
 }

@@ -8,7 +8,7 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { basescanTx } from "@skillos/ui";
+import { apiUrl, basescanTx } from "@skillos/ui";
 
 const GAME_DISPLAY = "2048";
 
@@ -24,7 +24,7 @@ type Tournament = {
 };
 
 async function fetchArchive(): Promise<{ archive: Tournament[] }> {
-  const res = await fetch("/api/tournaments/archive", { cache: "no-store" });
+  const res = await fetch(apiUrl("/api/tournaments/archive"), { cache: "no-store" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return (await res.json()) as { archive: Tournament[] };
 }

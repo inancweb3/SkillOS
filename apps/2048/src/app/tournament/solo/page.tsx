@@ -20,6 +20,7 @@ import { useAccount } from "wagmi";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { PLAY_WINDOW_MS } from "@skillos/contracts";
 import {
+  apiUrl,
   EmbedWalletFallback,
   ExtensionWarningModal,
   PopupHint,
@@ -65,7 +66,7 @@ async function fetchActive(address: string | undefined): Promise<ActiveResponse>
   const url = address
     ? `/api/tournaments?address=${address}`
     : `/api/tournaments`;
-  const res = await fetch(url, { cache: "no-store" });
+  const res = await fetch(apiUrl(url), { cache: "no-store" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return (await res.json()) as ActiveResponse;
 }
