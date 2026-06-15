@@ -74,9 +74,10 @@ jobs:
         # (incl. X23.2 cron-ratings, X20.1 F0 submit gate, X19 schema
         # integrity, X14.1 ext profile log), 2 in sp-engine, 2 in ui
         # (pure-helper tests, no RTL setup — duel-result-branch + X14.1
-        # extension-whitelist), 3 in apps/api (X10 server-side dataSuffix
+        # extension-whitelist), 6 in apps/api (X10 server-side dataSuffix
         # attribution, X23.3 rating endpoints, X15.5 Upstash rate-limit
-        # wiring), 1 in packages/contracts (X10b canonical Builder Code
+        # wiring, #4a-S4 tournaments, #4c scores, B-pluginV1 prepare-endpoint
+        # calldata), 1 in packages/contracts (X10b canonical Builder Code
         # surface), 1 in packages/glicko-rating (X23.1 wrapper determinism),
         # 1 in packages/anti-cheat (X20.0b F0 plausibility formula),
         # 8 in packages/engines (Δ6: 2048 engine determinism + 6 per-game
@@ -119,6 +120,7 @@ jobs:
             apps/api/test/rate-limit.test.ts \
             apps/api/test/tournaments.test.ts \
             apps/api/test/scores.test.ts \
+            apps/api/test/prepare.test.ts \
             scripts/smoke-x32-4-stub.ts \
             scripts/fidelity-2048-live-vs-engine.test.ts \
             scripts/fidelity-wordle-live-vs-engine.test.ts \

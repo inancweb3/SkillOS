@@ -10,6 +10,7 @@ import { authRoutes } from './routes/auth.js';
 import { authSiwaRoutes } from './routes/auth-siwa.js';
 import { dataRoutes } from './routes/data.js';
 import { healthRoutes } from './routes/health.js';
+import { prepareRoutes } from './routes/prepare.js';
 import { ratingRoutes } from './routes/ratings.js';
 import { scoreRoutes } from './routes/scores.js';
 import { sponsorRoutes } from './routes/sponsors.js';
@@ -100,6 +101,7 @@ app.route('/', sponsorRoutes);
 app.route('/', agentRoutes);
 app.route('/', agentMatchesRoutes);
 app.route('/', dataRoutes);
+app.route('/', prepareRoutes);
 
 // ─── OpenAPI 3.1 spec endpoints ───────────────────────────────────────────
 
