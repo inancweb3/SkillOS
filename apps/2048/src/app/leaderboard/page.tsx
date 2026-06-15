@@ -11,7 +11,7 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { AddressDisplay } from "@skillos/ui";
+import { AddressDisplay, apiUrl } from "@skillos/ui";
 
 type LeaderboardRow = {
   rank: number;
@@ -22,7 +22,7 @@ type LeaderboardRow = {
 };
 
 async function fetchLeaderboard(): Promise<LeaderboardRow[]> {
-  const res = await fetch("/api/leaderboard", { cache: "no-store" });
+  const res = await fetch(apiUrl("/api/leaderboard"), { cache: "no-store" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const { leaderboard } = (await res.json()) as {
     leaderboard: LeaderboardRow[];

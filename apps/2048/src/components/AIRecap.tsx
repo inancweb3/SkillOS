@@ -30,7 +30,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { RecapResponse, RecapStyle } from "@skillos/ai-coach";
-import { RECAP_MODEL_DISPLAY } from "@skillos/ui";
+import { apiUrl, RECAP_MODEL_DISPLAY } from "@skillos/ui";
 
 type Props = {
   matchId: string;
@@ -52,7 +52,7 @@ async function fetchRecap(
     context === "solo"
       ? `/api/tournaments/solo/${matchId}/recap`
       : `/api/duel/${matchId}/recap`;
-  const res = await fetch(url, {
+  const res = await fetch(apiUrl(url), {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: "{}",

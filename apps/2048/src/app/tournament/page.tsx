@@ -13,6 +13,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAccount } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
 import {
+  apiUrl,
   ExclusionTooltip,
   TournamentClassPill,
   truncateAddress,
@@ -104,13 +105,13 @@ type DetailResponse = {
 // ─── Data hooks ───────────────────────────────────────────────────────────
 
 async function fetchActive(): Promise<ActiveResponse> {
-  const res = await fetch("/api/tournaments", { cache: "no-store" });
+  const res = await fetch(apiUrl("/api/tournaments"), { cache: "no-store" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return (await res.json()) as ActiveResponse;
 }
 
 async function fetchDetail(id: string): Promise<DetailResponse> {
-  const res = await fetch(`/api/tournaments/${id}`, { cache: "no-store" });
+  const res = await fetch(apiUrl(`/api/tournaments/${id}`), { cache: "no-store" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return (await res.json()) as DetailResponse;
 }

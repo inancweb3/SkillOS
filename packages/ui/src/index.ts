@@ -6,6 +6,7 @@
 
 export * from "./utils";
 export * from "./api-client";
+export { apiUrl } from "./apiUrl";
 export { wagmiConfig } from "./wagmi";
 export { Providers } from "./Providers";
 export { Timer } from "./Timer";

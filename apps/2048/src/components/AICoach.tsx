@@ -24,7 +24,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import type { CoachResponse, CoachTone } from "@skillos/ai-coach";
-import { COACH_MODEL_DISPLAY } from "@skillos/ui";
+import { apiUrl, COACH_MODEL_DISPLAY } from "@skillos/ui";
 
 type DuelProps = {
   matchId: string;
@@ -48,7 +48,7 @@ async function fetchCoach(
       ? `/api/tournaments/solo/${matchId}/coach`
       : `/api/duel/${matchId}/coach`;
   const body = context === "solo" ? "{}" : JSON.stringify({ player });
-  const res = await fetch(url, {
+  const res = await fetch(apiUrl(url), {
     method: "POST",
     headers: { "content-type": "application/json" },
     body,

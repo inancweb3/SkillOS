@@ -1,6 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Env-driven basePath. Unset on mas-2048 (serves at root, byte-identical to
+  // before); set to "/2048" on the arena-2048 deployment so the app serves at
+  // arena.skillos.network/2048. `|| undefined` keeps Next's default (no
+  // basePath) when the env var is absent. Same-origin /api fetch() strings are
+  // basePath-prefixed at the call site via @skillos/ui's apiUrl() helper —
+  // Next does not auto-prefix runtime fetch.
+  basePath: process.env.NEXT_PUBLIC_BASE_PATH || undefined,
   // Workspace packages ship TypeScript sources (no build step). Next must
   // transpile them alongside the app's own src/.
   transpilePackages: [
