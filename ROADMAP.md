@@ -58,7 +58,7 @@ Dates below are target windows, not launch promises. A phase advances only when 
 - Publish a simple service-status/runbook document and identify owners for API, signer, database, DNS, and contract incidents.
 - Keep T1–T3 claims disabled until their corresponding verifier path exists.
 
-**Exit gate:** CI is green, production endpoints are healthy for seven consecutive days, scheduled runs succeed, and no unauthenticated or mismatched wallet can trigger platform spending.
+**Exit gate:** Completes the offline, reproducible CI engineering baseline and unblocks the start of protocol development. Production and agent-funded operation remain closed until seven consecutive days of endpoint health, successful scheduled runs, and wallet-binding safety are also complete.
 
 ### Phase 1 — Make the arena primitive genuinely domain-neutral ([#209](https://github.com/youngstar-eth/SkillOS/issues/209))
 
@@ -157,8 +157,8 @@ Dates below are target windows, not launch promises. A phase advances only when 
 
 ## Immediate next actions
 
-1. Keep the merged security/CI baseline ([PR #200](https://github.com/youngstar-eth/SkillOS/pull/200)) green on `main`; complete remaining Phase 0 ops soak before reopening agent-funded execution.
-2. Restore and verify the production/testnet deployment surface.
-3. Approve the arena/evidence ADR before implementing generalized endpoints.
-4. Build the benchmark import interface and coding adapter as the first consumers of that interface.
-5. Recruit one design partner while the AI benchmarking vertical slice is being built.
+1. Keep `main` CI green.
+2. Approve the arena/evidence ADR and develop `@skillos/protocol` v0.1.
+3. Verify the production/testnet surface on a parallel ops track; do not open funded execution.
+4. After the protocol lands, move on to the benchmark adapter.
+5. Continue design-partner work.
