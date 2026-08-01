@@ -1,9 +1,9 @@
 # ADR 0005 — Arena / Evidence Protocol v0.1 (Offchain-First)
 
-**Status:** Proposed — awaiting architectural approval (Phase 1A)  
-**Date:** 2026-08-01  
-**Deciders:** Product owner (İnanç Ayvaz); technical lead/reviewer (Codex); implementation (Grok Build)  
-**Primary repo:** `youngstar-eth/SkillOS`  
+**Status:** Proposed — awaiting architectural approval (Phase 1A)
+**Date:** 2026-08-01
+**Deciders:** Product owner (İnanç Ayvaz); technical lead/reviewer (Codex); implementation (Grok Build)
+**Primary repo:** `youngstar-eth/SkillOS`
 **Related:** `ROADMAP.md` Phase 1 (#209); kit `context/03_INTEGRATION_CONTRACT.md`; kit `prompts/03_SHARED_PROTOCOL.md`; security baseline PR #200 (`b160104`); roadmap PR #203 (`7e73939`)
 
 ## Status
@@ -14,25 +14,25 @@
 
 SkillOS main already contains game-centric tournament, score, SIWA, x402, and MCP surfaces. The product direction (ROADMAP) requires a **domain-neutral** proof-of-skill substrate that can represent:
 
-1. **Legacy games** (e.g. 2048) as continuous fixtures without breaking existing API/tournament clients.  
+1. **Legacy games** (e.g. 2048) as continuous fixtures without breaking existing API/tournament clients.
 2. **Simpl3 Safety Arena / agent evaluations** as synthetic, offline, read/propose-only runs that never receive SkillOS execution authority over Simpl3 CDP/Act.
 
 Phase 0 engineering baseline is complete: security/CI hardening is on `main` (#200); offline `npm ci` and gates are green. Production/ops soak (7-day endpoint health, scheduled runs, funded execution) remains a **parallel** track and **does not block** offchain protocol design or package work.
 
 Without a frozen ADR:
 
-- Game score schemas and future eval traces risk diverging.  
-- Simpl3 and SkillOS cannot share golden fixtures or contract tests.  
+- Game score schemas and future eval traces risk diverging.
+- Simpl3 and SkillOS cannot share golden fixtures or contract tests.
 - Onchain placement vs private data would be reinvented per feature.
 
 ## Goals (v0.1)
 
-1. Define versioned, domain-neutral types and (in 1B) JSON Schemas for arena/manifest/evidence/verification.  
-2. Multi-axis **measurements**; a single scalar “score” is optional, not canonical.  
-3. Canonical serialization + content digests so tamper is detectable.  
-4. Clear **onchain vs offchain** placement (privacy-preserving).  
-5. Semver rules; reject unknown protocol major versions.  
-6. Allow a **compatibility adapter** from current game score submission → evidence without breaking public game APIs or renaming `TournamentPool`.  
+1. Define versioned, domain-neutral types and (in 1B) JSON Schemas for arena/manifest/evidence/verification.
+2. Multi-axis **measurements**; a single scalar “score” is optional, not canonical.
+3. Canonical serialization + content digests so tamper is detectable.
+4. Clear **onchain vs offchain** placement (privacy-preserving).
+5. Semver rules; reject unknown protocol major versions.
+6. Allow a **compatibility adapter** from current game score submission → evidence without breaking public game APIs or renaming `TournamentPool`.
 7. Allow Simpl3 to consume the protocol as a **pinned package or published schema**, never via relative monorepo path or SkillOS server imports.
 
 ## Non-goals (v0.1)
@@ -51,20 +51,20 @@ Without a frozen ADR:
 
 ### D1 — Package and version
 
-- Ship `@skillos/protocol` as a **versioned offchain package** (Apache-2.0 intended for open core; exact license file in 1B).  
-- First release: **`0.1.0`**.  
+- Ship `@skillos/protocol` as a **versioned offchain package** (Apache-2.0 intended for open core; exact license file in 1B).
+- First release: **`0.1.0`**.
 - Consumption: npm package pin or vendored JSON Schema + golden fixtures — **no** `file:../SkillOS` relative imports between repos.
 
 #### D1.1 — Supported `protocolVersion` range (normative)
 
-- Every protocol-owned top-level document MUST include `protocolVersion` as a **semver** string (`MAJOR.MINOR.PATCH`, optional pre-release not used in v0.1 fixtures).  
-- **v0.1 implementation accepts only major version `0` with minor `1`:** supported range is **`0.1.x`** (e.g. `0.1.0`, `0.1.1`).  
+- Every protocol-owned top-level document MUST include `protocolVersion` as a **semver** string (`MAJOR.MINOR.PATCH`, optional pre-release not used in v0.1 fixtures).
+- **v0.1 implementation accepts only major version `0` with minor `1`:** supported range is **`0.1.x`** (e.g. `0.1.0`, `0.1.1`).
 - **Unsupported-version behavior:** parsers/validators MUST fail closed with a distinct error class/code (e.g. `UNSUPPORTED_PROTOCOL_VERSION`) when:
-  - major ≠ `0`, or  
-  - major = `0` and minor ≠ `1`, or  
-  - the string is not a valid semver, or  
-  - the field is missing.  
-- Future `0.2.x` / `1.x` require a new protocol release; v0.1 clients MUST NOT silently accept them.  
+  - major ≠ `0`, or
+  - major = `0` and minor ≠ `1`, or
+  - the string is not a valid semver, or
+  - the field is missing.
+- Future `0.2.x` / `1.x` require a new protocol release; v0.1 clients MUST NOT silently accept them.
 - Within `0.1.x`, optional fields may be added in later patches; required-field removal or renames are **not** allowed without a major bump beyond this ADR’s 0.1 line.
 
 ### D2 — Core document types (normative names)
@@ -73,9 +73,9 @@ Implement in 1B as TypeScript types + **JSON Schema Draft 2020-12** (see D2.0). 
 
 #### D2.0 — Schema standard and closed objects (normative)
 
-- **Canonical schema language for all protocol-owned documents is JSON Schema Draft 2020-12** (`$schema` must identify 2020-12). No alternate meta-schema (Draft-07, OpenAPI-only, Zod-as-source-of-truth without JSON Schema emit) is normative for interchange.  
-- **Every protocol-owned object schema** (including nested objects in ArenaDefinition, BenchmarkManifest, EvidenceEnvelope, MeasurementDefinition, VerifierDescriptor, VerificationResult, artifact descriptors, subject, provenance, evaluator, etc.) MUST set **`additionalProperties: false`**.  
-- Arrays of objects use item schemas that likewise set `additionalProperties: false`.  
+- **Canonical schema language for all protocol-owned documents is JSON Schema Draft 2020-12** (`$schema` must identify 2020-12). No alternate meta-schema (Draft-07, OpenAPI-only, Zod-as-source-of-truth without JSON Schema emit) is normative for interchange.
+- **Every protocol-owned object schema** (including nested objects in ArenaDefinition, BenchmarkManifest, EvidenceEnvelope, MeasurementDefinition, VerifierDescriptor, VerificationResult, artifact descriptors, subject, provenance, evaluator, etc.) MUST set **`additionalProperties: false`**.
+- Arrays of objects use item schemas that likewise set `additionalProperties: false`.
 - Unknown keys are a **hard validation failure**, not stripped-and-accepted.
 
 #### `ArenaDefinition`
@@ -127,16 +127,16 @@ Multi-axis is required; aggregate scalar score is **optional** derived metric, n
 type MeasurementValue = number | string | boolean
 ```
 
-- Used for producer-side structured measurement **values** on evidence (`measurements` map or list aligned to definitions) and for any intermediate metric bags that are not verifier-normalized.  
-- `valueType` on `MeasurementDefinition` constrains which arm of `MeasurementValue` is legal for that axis.  
+- Used for producer-side structured measurement **values** on evidence (`measurements` map or list aligned to definitions) and for any intermediate metric bags that are not verifier-normalized.
+- `valueType` on `MeasurementDefinition` constrains which arm of `MeasurementValue` is legal for that axis.
 - **VerificationResult.measurements** remains `Record<string, number>` (see D2.1): verifier-normalized **scores for ranking/gates** are numeric only; boolean/string axes must be mapped by the verifier into numeric codes or omitted from `VerificationResult.measurements` and reflected only in `disqualifications` / status. This is intentional: settlement-grade multi-axis outputs are comparable numbers; free-form strings belong in evidence, not in the result score vector.
 
 #### D2.1 — Why VerificationResult measurements are numeric-only (normative rationale)
 
 Verifiers emit a **score vector** for leaderboards, hard gates, and future settlement. Numbers are total-ordered and digest-stable under JCS. Booleans/strings as first-class result measurements would force ambiguous ordering and locale/format instability. Therefore:
 
-- Evidence MAY carry full `MeasurementValue`.  
-- `VerificationResult.measurements` MUST be `Record<string, number>` only.  
+- Evidence MAY carry full `MeasurementValue`.
+- `VerificationResult.measurements` MUST be `Record<string, number>` only.
 - Non-numeric outcomes that fail a rule use `status: "rejected"` and `disqualifications[]` (string rule IDs), not string values inside `measurements`.
 
 #### `EvidenceEnvelope`
@@ -193,12 +193,12 @@ Binding rules (enforced by recompute helpers, D3.3): `manifestDigest` / `evidenc
 
 #### D3.0 — JCS (RFC 8785) + UTF-8 + digest string format
 
-1. **Canonical serialization** for all digest inputs is **RFC 8785 JSON Canonicalization Scheme (JCS)** applied to a JSON value, producing a unique **UTF-8** byte sequence.  
-2. Implementations MUST NOT invent an alternate key-sort/whitespace algorithm; behavior is defined by RFC 8785.  
-3. **Numbers:** only finite JSON numbers that JCS can represent safely are allowed. **`NaN`, `Infinity`, `-Infinity`, and non-finite values MUST be rejected** before canonicalization. Values that cannot be represented without precision loss relative to the protocol’s numeric rules MUST be rejected (fail closed).  
-4. **Digest algorithm and encoding (fixed for v0.1):**  
-   `digest = "sha256:" + lowercase_hex( SHA-256( utf8_bytes( JCS(value) ) ) )`  
-   where `lowercase_hex` is exactly **64** characters `[0-9a-f]`.  
+1. **Canonical serialization** for all digest inputs is **RFC 8785 JSON Canonicalization Scheme (JCS)** applied to a JSON value, producing a unique **UTF-8** byte sequence.
+2. Implementations MUST NOT invent an alternate key-sort/whitespace algorithm; behavior is defined by RFC 8785.
+3. **Numbers:** only finite JSON numbers that JCS can represent safely are allowed. **`NaN`, `Infinity`, `-Infinity`, and non-finite values MUST be rejected** before canonicalization. Values that cannot be represented without precision loss relative to the protocol’s numeric rules MUST be rejected (fail closed).
+4. **Digest algorithm and encoding (fixed for v0.1):**
+   `digest = "sha256:" + lowercase_hex( SHA-256( utf8_bytes( JCS(value) ) ) )`
+   where `lowercase_hex` is exactly **64** characters `[0-9a-f]`.
 5. Digest **format** validation is a separate check from content recompute (see D3.3): strings not matching `^sha256:[0-9a-f]{64}$` are rejected as `INVALID_DIGEST_FORMAT`.
 
 #### D3.1 — Digest projections (what is hashed)
@@ -214,11 +214,11 @@ Artifact digests and other nested digests hash the artifact payload bytes or nes
 
 #### D3.2 — Storing digests on objects
 
-- `BenchmarkManifest` does not need an embedded self-digest field; consumers compute `manifestDigest = Digest(full manifest)`.  
-- `EvidenceEnvelope.manifestDigest` MUST equal `Digest(full manifest)`.  
-- `EvidenceEnvelope` content digest for binding is `evidenceDigest = Digest(evidence without signature)`.  
-- `VerifierDescriptor.digest` MUST equal `Digest(descriptor without digest field)`.  
-- `VerificationResult.manifestDigest` / `evidenceDigest` are **required** and MUST equal the corresponding digests.  
+- `BenchmarkManifest` does not need an embedded self-digest field; consumers compute `manifestDigest = Digest(full manifest)`.
+- `EvidenceEnvelope.manifestDigest` MUST equal `Digest(full manifest)`.
+- `EvidenceEnvelope` content digest for binding is `evidenceDigest = Digest(evidence without signature)`.
+- `VerifierDescriptor.digest` MUST equal `Digest(descriptor without digest field)`.
+- `VerificationResult.manifestDigest` / `evidenceDigest` are **required** and MUST equal the corresponding digests.
 - `VerificationResult.resultDigest` MUST equal `Digest(result without resultDigest and signature)`.
 
 #### D3.3 — Separate validation APIs (1B surface; normative split)
@@ -273,25 +273,25 @@ v0.1 **does not require** writing any of these onchain. When later phases anchor
 
 ### D5 — Identity (evaluation vs production)
 
-- Simpl3 **production CDP / Server Wallet / user Base Account used for live funds** MUST NOT be the evaluation subject identity by default.  
-- Phase 1 pilots use a **dedicated evaluation identity** per build/config.  
-- ERC-8004 is optional later; not required for protocol v0.1.  
+- Simpl3 **production CDP / Server Wallet / user Base Account used for live funds** MUST NOT be the evaluation subject identity by default.
+- Phase 1 pilots use a **dedicated evaluation identity** per build/config.
+- ERC-8004 is optional later; not required for protocol v0.1.
 - SkillOS never gains execute authority over Simpl3.
 
 ### D6 — Legacy game compatibility (adapter, not rewrite)
 
-- Keep existing score/tournament HTTP and `TournamentPool` as-is.  
-- Provide an **adapter** (1B scope) that maps a game score submission + run metadata → `EvidenceEnvelope` + manifest for that game task type.  
-- No breaking change to public game clients required for protocol v0.1 package publish.  
+- Keep existing score/tournament HTTP and `TournamentPool` as-is.
+- Provide an **adapter** (1B scope) that maps a game score submission + run metadata → `EvidenceEnvelope` + manifest for that game task type.
+- No breaking change to public game clients required for protocol v0.1 package publish.
 - Games become **fixtures** that prove domain-neutrality.
 
 ### D7 — Simpl3 Safety Arena mapping (consumer)
 
 Simpl3 offline evaluation runner (later kit phase) produces:
 
-- Synthetic scenario + frozen provider fixtures → digests in provenance.  
-- Read/propose-only tool trace → redacted artifacts (digest or redacted stub).  
-- Decision + metrics → `measurements` / `metrics`.  
+- Synthetic scenario + frozen provider fixtures → digests in provenance.
+- Read/propose-only tool trace → redacted artifacts (digest or redacted stub).
+- Decision + metrics → `measurements` / `metrics`.
 - No live execute, no real funds, no SkillOS → Simpl3 Act path.
 
 SkillOS verifier (later) only verifies evidence against manifest; it does not call Simpl3 execution APIs.
@@ -320,7 +320,7 @@ Workspace registration and CI job for protocol tests are part of 1B.
 
 Minimum two fixtures validated by schema + digest tests:
 
-1. **Legacy 2048-style** submission adapted to evidence (synthetic or recorded, no secrets).  
+1. **Legacy 2048-style** submission adapted to evidence (synthetic or recorded, no secrets).
 2. **Synthetic Simpl3 safety evaluation** evidence (offline, redacted).
 
 Tests must reject: wrong major version, tampered digest, missing required measurement when `required: true`.
@@ -337,28 +337,28 @@ Protocol package v0.1 only needs `VerificationResult.status`: `verified` | `reje
 
 ### Positive
 
-- Simpl3 and SkillOS share one contract without mono-repo coupling.  
-- Games remain fixtures; benchmarks and agent evals use the same envelope.  
-- Privacy and security boundaries are explicit before code lands.  
+- Simpl3 and SkillOS share one contract without mono-repo coupling.
+- Games remain fixtures; benchmarks and agent evals use the same envelope.
+- Privacy and security boundaries are explicit before code lands.
 - Ops soak can proceed in parallel without blocking protocol 1B.
 
 ### Negative / tradeoffs
 
-- Existing score JSON is not identical to `EvidenceEnvelope`; adapter layer required.  
-- JCS + closed schemas are strict; producers must not emit undefined/extra keys or non-finite numbers.  
+- Existing score JSON is not identical to `EvidenceEnvelope`; adapter layer required.
+- JCS + closed schemas are strict; producers must not emit undefined/extra keys or non-finite numbers.
 - Multi-axis measurements need UI/API education vs single score; non-numeric axes need explicit verifier mapping into numbers or disqualifications.
 
 ### Risks if rejected or delayed
 
-- Divergent ad-hoc JSON between Simpl3 eval and SkillOS verifiers.  
+- Divergent ad-hoc JSON between Simpl3 eval and SkillOS verifiers.
 - Premature onchain coupling or secret leakage into “public” evidence fields.
 
 ## Implementation gate (Phase 1B)
 
 Codex (or product owner) marks this ADR **Accepted**. Then Grok Build may:
 
-1. Implement `@skillos/protocol@0.1.0` per D1–D10.  
-2. Add schemas, validators, digests, fixtures, adapter, tests.  
+1. Implement `@skillos/protocol@0.1.0` per D1–D10.
+2. Add schemas, validators, digests, fixtures, adapter, tests.
 3. **Not** open agent-funded production spend; **not** wire Simpl3 execute tools.
 
 Out of 1B unless separately authorized: arena HTTP endpoints, MCP tool surface expansion, onchain anchoring, staked resolution.
@@ -374,19 +374,19 @@ Out of 1B unless separately authorized: arena HTTP endpoints, MCP tool surface e
 
 ## References
 
-- `ROADMAP.md` — Phase 1 (#209), Phase 0 exit gate split (CI vs ops)  
-- `grok-build/context/03_INTEGRATION_CONTRACT.md` — starter TypeScript shapes  
-- `grok-build/prompts/03_SHARED_PROTOCOL.md` — package acceptance criteria  
-- `grok-build/context/04_SECURITY_BOUNDARIES.md` — non-negotiables  
-- PR #200 — security/CI baseline on main  
-- PR #203 — product roadmap on main  
+- `ROADMAP.md` — Phase 1 (#209), Phase 0 exit gate split (CI vs ops)
+- `grok-build/context/03_INTEGRATION_CONTRACT.md` — starter TypeScript shapes
+- `grok-build/prompts/03_SHARED_PROTOCOL.md` — package acceptance criteria
+- `grok-build/context/04_SECURITY_BOUNDARIES.md` — non-negotiables
+- PR #200 — security/CI baseline on main
+- PR #203 — product roadmap on main
 
 ## Approval checklist (reviewer)
 
-- [ ] Domain-neutral types cover game + Simpl3 eval without special-case core fields  
-- [ ] Privacy/onchain placement is sufficient for public evidence  
-- [ ] Digest/canonicalization choice is implementable and testable  
-- [ ] Legacy `TournamentPool` / score API unbroken by design  
-- [ ] SkillOS cannot gain Simpl3 execute authority via this protocol  
-- [ ] Ops soak correctly non-blocking for 1B package work  
-- [ ] Status → **Accepted** (or request revisions)  
+- [ ] Domain-neutral types cover game + Simpl3 eval without special-case core fields
+- [ ] Privacy/onchain placement is sufficient for public evidence
+- [ ] Digest/canonicalization choice is implementable and testable
+- [ ] Legacy `TournamentPool` / score API unbroken by design
+- [ ] SkillOS cannot gain Simpl3 execute authority via this protocol
+- [ ] Ops soak correctly non-blocking for 1B package work
+- [ ] Status → **Accepted** (or request revisions)
