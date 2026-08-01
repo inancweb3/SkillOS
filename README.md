@@ -141,6 +141,8 @@ ABIs and address constants are exported from `@skillos/contracts`.
 
 ## Phase roadmap
 
+The outcome-based execution plan, including the first non-game coding arena, is maintained in [`ROADMAP.md`](./ROADMAP.md).
+
 Two numbering systems coexist in the codebase: a **product roadmap** (Phase 1 → 5, this section) and **engineering-internal contract versions** (v2.0 → v2.1 → v2.2, Smart Contracts section above). Don't reconcile — the audiences differ. See [`CLAUDE.md`](./CLAUDE.md#two-phase-numbering-systems).
 
 - **Phase 1 — Shipped (now).** Testnet on Base Sepolia. Six games, three AI features, on-chain tournament settlement, permissionless sponsor MVP, Blockscout-verified v2.1 stack.
