@@ -24,7 +24,7 @@ The first non-game wedge will be **verifiable AI capability benchmarking**, begi
 | Reference adapters | Six games demonstrate bounded tasks, scoring, leaderboards, and tournament flows. |
 | Developer surface | API, SDK, CLI, MCP, skill pack, and an agent runner exist at different maturity levels. |
 | Verification | Deterministic replay has a game scaffold; generalized evidence verification is not yet a stable public interface. Judgment-based staked resolution is design-only. |
-| Security | Hardening is prepared in [PR #200](https://github.com/youngstar-eth/SkillOS/pull/200); it must land before reopening agent-funded execution. |
+| Security | Baseline hardening landed via [PR #200](https://github.com/youngstar-eth/SkillOS/pull/200) (squash-merged to `main` as `b160104`). Wallet binding, x402 receipt checks, T1–T3 fail-closed, and offline CI codegen are on `main`. Agent-funded execution remains closed until ops soak and remaining gates pass. |
 | Operations | Production API and game-domain deployment/DNS health must be restored and proven before the product is called live. |
 
 ## North-star outcome
@@ -51,7 +51,7 @@ Dates below are target windows, not launch promises. A phase advances only when 
 
 **Goal:** make the existing system safe, deployable, and observable again.
 
-- Merge the approved security and dependency-hardening PRs after review.
+- Security/CI baseline [PR #200](https://github.com/youngstar-eth/SkillOS/pull/200) is merged; keep main CI green and do not reopen agent-funded spend until remaining Phase 0 gates pass.
 - Restore `api.skillos.network`, OpenAPI, and all reference-app DNS/deployments.
 - Run production smoke tests for health, auth, arena discovery, score submission, x402 settlement, and scheduled agent execution.
 - Confirm deployed commits match the intended Git SHAs and capture Base Sepolia transaction evidence.
@@ -157,7 +157,7 @@ Dates below are target windows, not launch promises. A phase advances only when 
 
 ## Immediate next actions
 
-1. Review and merge the four open hardening PRs.
+1. Keep the merged security/CI baseline ([PR #200](https://github.com/youngstar-eth/SkillOS/pull/200)) green on `main`; complete remaining Phase 0 ops soak before reopening agent-funded execution.
 2. Restore and verify the production/testnet deployment surface.
 3. Approve the arena/evidence ADR before implementing generalized endpoints.
 4. Build the benchmark import interface and coding adapter as the first consumers of that interface.
