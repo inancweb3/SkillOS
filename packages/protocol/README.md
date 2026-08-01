@@ -75,9 +75,17 @@ npm run generate-types -w @skillos/protocol
 npm run check-types-drift -w @skillos/protocol
 npm run typecheck -w @skillos/protocol
 npm test -w @skillos/protocol          # unit + browser-bundle smoke
+npm run test:external-consumer -w @skillos/protocol  # pack + clean consumer install
 npm run build -w @skillos/protocol     # emits dist/ (gitignored)
 npm pack --dry-run -w @skillos/protocol  # includes dist/
 ```
+
+## External consumer (publish readiness)
+
+`npm run test:external-consumer` packs the package, installs the tarball into a
+temp project **outside** the monorepo, and runs TypeScript typecheck, Node 20
+runtime smoke (Simpl3 safety fixture schema + digests + binding), and a browser
+IIFE bundle smoke. No registry publish is performed.
 
 ## Docs
 

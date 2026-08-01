@@ -1,0 +1,38 @@
+# Phase 1C — publish-readiness gate for @skillos/protocol
+# Verifies npm pack + clean external (non-monorepo) consumer install.
+name: Protocol external consumer
+
+on:
+  pull_request:
+    paths:
+      - 'packages/protocol/**'
+      - '.github/workflows/protocol-external-consumer.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'packages/protocol/**'
+      - '.github/workflows/protocol-external-consumer.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: protocol-external-consumer-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  external-consumer:
+    name: protocol-external-consumer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: External consumer smoke (pack + install + typecheck + node/browser)
+        run: npm run test:external-consumer -w @skillos/protocol
+        env:
+          CI: 'true'

@@ -2,4 +2,5 @@
 # dist is produced by `npm run build` / prepack for npm pack only).
 /dist/
 *.tgz
+skillos-protocol-*.tgz
 node_modules/

@@ -45,7 +45,8 @@
     "generate-types": "tsx scripts/generate-types.ts",
     "check-types-drift": "tsx scripts/check-types-drift.ts",
     "build-fixtures": "tsx scripts/build-fixtures.ts",
-    "test": "tsx --test test/protocol.test.ts test/browser-smoke.test.ts",
+    "test": "tsx --test test/protocol.test.ts test/browser-smoke.test.ts test/external-consumer-smoke.test.ts",
+    "test:external-consumer": "node scripts/external-consumer-smoke.mjs",
     "prepack": "npm run build"
   },
   "dependencies": {
