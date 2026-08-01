@@ -3,7 +3,11 @@
  *
  * Runs the bundle in a vm sandbox approximating a browser. Node's SubtleCrypto
  * rejects cross-realm ArrayBuffers from `vm`, so digest is bridged to the host
- * crypto with a host-owned Buffer copy (real browsers do not have this issue).
+ * crypto with a host-owned Uint8Array copy (real browsers do not have this issue).
+ *
+ * Cross-realm caveat: `data instanceof ArrayBuffer` is false for vm ArrayBuffers.
+ * Always branch with `ArrayBuffer.isView(data)` first, then treat the rest as
+ * ArrayBuffer and copy with `Uint8Array.from(...)`.
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
@@ -11,10 +15,32 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as esbuild from "esbuild";
 import vm from "node:vm";
-import { Buffer } from "node:buffer";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const entry = join(__dirname, "..", "src", "browser-entry.ts");
+
+/** Known digest of JCS({"hello":"browser"}) — empty SHA-256 must never pass. */
+const EXPECTED_HELLO_BROWSER_DIGEST =
+  "sha256:46e3d490777f7b0340ac80c9e70d61a2e3157c022cc495a47782d067e6e98998";
+
+const EMPTY_SHA256 =
+  "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+
+/**
+ * Copy a BufferSource that may originate in another JS realm into a host-owned
+ * Uint8Array that Node SubtleCrypto accepts.
+ */
+function bufferSourceToHostUint8Array(data: BufferSource): Uint8Array {
+  // Cross-realm ArrayBuffer fails `instanceof ArrayBuffer` in the host realm.
+  // Prefer ArrayBuffer.isView (works across realms) before treating as ArrayBuffer.
+  if (ArrayBuffer.isView(data)) {
+    return Uint8Array.from(
+      new Uint8Array(data.buffer, data.byteOffset, data.byteLength),
+    );
+  }
+  // Remaining BufferSource is ArrayBuffer (possibly cross-realm).
+  return Uint8Array.from(new Uint8Array(data as ArrayBuffer));
+}
 
 function hostCryptoBridge(): Crypto {
   const host = globalThis.crypto;
@@ -25,16 +51,7 @@ function hostCryptoBridge(): Crypto {
         algorithm: AlgorithmIdentifier,
         data: BufferSource,
       ): Promise<ArrayBuffer> {
-        const view =
-          data instanceof ArrayBuffer
-            ? new Uint8Array(data)
-            : new Uint8Array(
-                (data as ArrayBufferView).buffer,
-                (data as ArrayBufferView).byteOffset,
-                (data as ArrayBufferView).byteLength,
-              );
-        // Host-realm Buffer — accepted by Node SubtleCrypto under vm.
-        const hostOwned = Buffer.from(view);
+        const hostOwned = bufferSourceToHostUint8Array(data);
         return host.subtle.digest(algorithm, hostOwned);
       },
     } as SubtleCrypto,
@@ -62,12 +79,12 @@ describe("browser bundle smoke", () => {
     assert.equal(code.includes("node:url"), false);
     assert.equal(/from ["']fs["']/.test(code), false);
 
+    // No Node Buffer in sandbox — browser-like globals only.
     const sandbox: Record<string, unknown> = {
       crypto: hostCryptoBridge(),
       TextEncoder,
       TextDecoder,
       console,
-      Buffer,
     };
     sandbox.globalThis = sandbox;
     sandbox.self = sandbox;
@@ -88,6 +105,8 @@ describe("browser bundle smoke", () => {
     assert.equal(out.ok, true);
     assert.equal(out.protocolVersion, "0.1.0");
     assert.equal(out.canonical, '{"a":1,"b":2}');
-    assert.match(out.digest, /^sha256:[0-9a-f]{64}$/);
+    // Exact digest — must not equal empty-input SHA-256 (false-green trap).
+    assert.notEqual(out.digest, EMPTY_SHA256);
+    assert.equal(out.digest, EXPECTED_HELLO_BROWSER_DIGEST);
   });
 });

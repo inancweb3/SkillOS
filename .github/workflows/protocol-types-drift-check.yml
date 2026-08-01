@@ -16,6 +16,10 @@ on:
       - 'packages/protocol/**'
       - '.github/workflows/protocol-types-drift-check.yml'
 
+# Least privilege: checkout + npm only (CodeQL / security baseline).
+permissions:
+  contents: read
+
 concurrency:
   group: protocol-types-drift-${{ github.ref }}
   cancel-in-progress: true
