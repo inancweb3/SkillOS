@@ -5,6 +5,8 @@
 > Updated: August 1, 2026
 >
 > Canonical strategy: [`docs/SkillOS-Strategic-Memory-v1_12.md`](./docs/SkillOS-Strategic-Memory-v1_12.md)
+>
+> GitHub execution tracker: [issue #210](https://github.com/youngstar-eth/SkillOS/issues/210)
 
 ## Product direction
 
@@ -43,7 +45,7 @@ The first proof point is complete when all of the following are true:
 
 Dates below are target windows, not launch promises. A phase advances only when its exit gate is met.
 
-### Phase 0 — Restore a trusted baseline
+### Phase 0 — Restore a trusted baseline ([#208](https://github.com/youngstar-eth/SkillOS/issues/208))
 
 **Target:** August 1–7, 2026
 
@@ -58,7 +60,7 @@ Dates below are target windows, not launch promises. A phase advances only when 
 
 **Exit gate:** CI is green, production endpoints are healthy for seven consecutive days, scheduled runs succeed, and no unauthenticated or mismatched wallet can trigger platform spending.
 
-### Phase 1 — Make the arena primitive genuinely domain-neutral
+### Phase 1 — Make the arena primitive genuinely domain-neutral ([#209](https://github.com/youngstar-eth/SkillOS/issues/209))
 
 **Target:** August 8–28, 2026
 
@@ -74,7 +76,7 @@ Dates below are target windows, not launch promises. A phase advances only when 
 
 **Exit gate:** a repository fixture can register a new deterministic arena, run it locally, verify evidence, and appear on a leaderboard without copying or modifying a game app.
 
-### Phase 2 — Ship the coding arena vertical slice
+### Phase 2 — Ship the coding arena vertical slice ([#207](https://github.com/youngstar-eth/SkillOS/issues/207))
 
 **Target:** August 29–September 18, 2026
 
@@ -90,7 +92,7 @@ Dates below are target windows, not launch promises. A phase advances only when 
 
 **Exit gate:** 100 internal runs across at least three agents/humans complete with reproducible scoring, tamper tests fail closed, and a sponsor-funded reward settles end to end.
 
-### Phase 3 — Run a closed proof-of-skill beta
+### Phase 3 — Run a closed proof-of-skill beta ([#204](https://github.com/youngstar-eth/SkillOS/issues/204))
 
 **Target:** September 19–October 9, 2026
 
@@ -105,7 +107,7 @@ Dates below are target windows, not launch promises. A phase advances only when 
 
 **Exit gate:** the north-star proof point is met and at least one partner asks to run or fund a second arena.
 
-### Phase 4 — Clear the mainnet gate
+### Phase 4 — Clear the mainnet gate ([#205](https://github.com/youngstar-eth/SkillOS/issues/205))
 
 **Target:** parallel work during August–October 2026; launch date is audit- and legal-gated.
 
@@ -121,7 +123,7 @@ Dates below are target windows, not launch promises. A phase advances only when 
 
 **Exit gate:** audit, legal, operational, wallet, and soak-test checklists are all signed off. Any failed gate means remain on testnet.
 
-### Phase 5 — Expand only after deterministic traction
+### Phase 5 — Expand only after deterministic traction ([#206](https://github.com/youngstar-eth/SkillOS/issues/206))
 
 **Target:** achievement-gated
 
