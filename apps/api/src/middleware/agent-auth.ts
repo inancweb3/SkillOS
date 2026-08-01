@@ -38,7 +38,9 @@ declare module 'hono' {
 export const requireSiwaAuth = (): MiddlewareHandler =>
   siwaMiddleware({
     receiptSecret: getReceiptSecret(),
-    verifyOnchain: false,
+    // A valid HMAC receipt alone is not enough for write access. Re-check the
+    // registry ownership so revoked/transferred agents cannot keep spending.
+    verifyOnchain: true,
     // The library's siwaMiddleware accepts an explicit publicClient. Pass our
     // Base-narrowed client through the same structural cast used in lib/siwa.ts.
     publicClient: getPublicClient() as unknown as PublicClient,

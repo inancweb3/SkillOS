@@ -26,7 +26,7 @@
     "test:integration": "tsx --test tests/integration.smoke.test.ts"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.29.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "openai": "^4.77.0",
     "zod": "^4.4.0"
   },

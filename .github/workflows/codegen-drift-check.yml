@@ -6,11 +6,9 @@
 # OWN OpenAPI spec and fails the job if the committed file drifts.
 #
 # ─── Why in-process emit, not live prod fetch ────────────────────────────
-# packages/sdk/scripts/generate-types.ts defaults to fetching the LIVE prod
-# spec (https://api.skillos.network/openapi.json). Diffing against prod would
-# answer the wrong question ("does committed SDK match DEPLOYED prod?") and
-# false-red whenever the repo legitimately leads prod (a PR that adds an
-# endpoint + regens correctly would fail because prod hasn't deployed it yet).
+# packages/sdk/scripts/generate-types.ts requires an explicit spec. Normal
+# builds use the committed generated file and never depend on production DNS
+# or deployment state.
 #
 # Instead we emit the spec IN-PROCESS from the PR's own apps/api (reusing the
 # apps/api/scripts/x23-3-openapi-delta.ts pattern: import the Hono app, call
@@ -87,13 +85,13 @@ jobs:
             echo "  2. api.gen.ts was hand-edited (banned per X24.2 hook + X24.4 ADR)"
             echo ""
             echo "Fix:"
-            echo "  npm run generate-types --workspace @skillos/sdk   # against your local API"
+            echo "  SKILLOS_OPENAPI_URL=file:///path/to/openapi.json npm run generate-types --workspace @skillos/sdk"
             echo "  git add packages/sdk/src/api.gen.ts"
             echo "  git commit -m 'chore: regen SDK types'"
             echo "  git push"
             echo ""
-            echo "(Local regen fetches live prod by default; set SKILLOS_OPENAPI_URL to your"
-            echo " local dev API, or emit in-process: npx tsx apps/api/scripts/emit-openapi.ts)"
+            echo "Emit a local spec first with:"
+            echo "  npx tsx apps/api/scripts/emit-openapi.ts /tmp/openapi.json"
             echo ""
             echo "Reference:"
             echo "  - X24.3 CI guard (this workflow)"

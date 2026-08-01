@@ -45,7 +45,6 @@
   ],
   "scripts": {
     "generate-types": "tsx scripts/generate-types.ts",
-    "prebuild": "npm run generate-types",
     "build": "tsup && node scripts/post-build.mjs",
     "prepare": "npm run build",
     "dev": "tsup --watch",
@@ -55,6 +54,7 @@
   },
   "dependencies": {
     "@buildersgarden/siwa": "0.0.24",
+    "@slicekit/erc8128": "^0.1.0",
     "openapi-fetch": "^0.13.0",
     "siwe": "^3.0.0"
   },

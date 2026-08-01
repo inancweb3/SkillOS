@@ -36,6 +36,34 @@ const FAKE_TX_HASH =
 const FAKE_NONCE =
   '0xabbacafe00000000000000000000000000000000000000000000000000000000' as const;
 const FIXED_NOW_MS = 1_700_000_000_000;
+const USDC_ADDR = '0x036CbD53842c5426634e7929541eC2318f3dCF7e' as const;
+const TRANSFER_TOPIC =
+  '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef' as const;
+
+function addressTopic(address: string): `0x${string}` {
+  return `0x${address.slice(2).toLowerCase().padStart(64, '0')}`;
+}
+
+function amountData(value: bigint): `0x${string}` {
+  return `0x${value.toString(16).padStart(64, '0')}`;
+}
+
+function successfulReceipt() {
+  return {
+    status: 'success',
+    logs: [
+      {
+        address: USDC_ADDR,
+        topics: [
+          TRANSFER_TOPIC,
+          addressTopic(AGENT_ADDR),
+          addressTopic(RECEIVER_ADDR),
+        ],
+        data: amountData(AGENT_MATCH_RETRY_ATOMIC),
+      },
+    ],
+  };
+}
 
 interface CapturedSignCall {
   domain: Record<string, unknown>;
@@ -156,6 +184,11 @@ test('settleX402Payment success returns tx hash + atomic amount + settledAt', as
         {
           signer,
           facilitator,
+          publicClient: {
+            async waitForTransactionReceipt() {
+              return successfulReceipt();
+            },
+          },
           now: () => FIXED_NOW_MS,
           randomNonce: () => FAKE_NONCE,
         },
@@ -187,6 +220,66 @@ test('settleX402Payment success returns tx hash + atomic amount + settledAt', as
   assert.equal(payload.payload.authorization.to, RECEIVER_ADDR);
   assert.equal(payload.payload.authorization.value, '1050000');
   assert.equal(payload.payload.authorization.nonce, FAKE_NONCE);
+});
+
+test('settleX402Payment rejects a reverted facilitator transaction', async () => {
+  const { signer } = makeSigner();
+  await assert.rejects(
+    () =>
+      withEnv({ X402_RECEIVER_ADDRESS: RECEIVER_ADDR }, () =>
+        settleX402Payment(
+          { runId: 'r', agentAddress: AGENT_ADDR, priorSolo: 1 },
+          {
+            signer,
+            facilitator: {
+              async settle() {
+                return { success: true, transaction: FAKE_TX_HASH };
+              },
+            },
+            publicClient: {
+              async waitForTransactionReceipt() {
+                return { status: 'reverted', logs: [] };
+              },
+            },
+          },
+        ),
+      ),
+    (err: unknown) => {
+      assert.ok(err instanceof X402SettlementError);
+      assert.equal((err as X402SettlementError).reason, 'transaction_reverted');
+      return true;
+    },
+  );
+});
+
+test('settleX402Payment rejects a receipt without the authorized USDC transfer', async () => {
+  const { signer } = makeSigner();
+  await assert.rejects(
+    () =>
+      withEnv({ X402_RECEIVER_ADDRESS: RECEIVER_ADDR }, () =>
+        settleX402Payment(
+          { runId: 'r', agentAddress: AGENT_ADDR, priorSolo: 1 },
+          {
+            signer,
+            facilitator: {
+              async settle() {
+                return { success: true, transaction: FAKE_TX_HASH };
+              },
+            },
+            publicClient: {
+              async waitForTransactionReceipt() {
+                return { status: 'success', logs: [] };
+              },
+            },
+          },
+        ),
+      ),
+    (err: unknown) => {
+      assert.ok(err instanceof X402SettlementError);
+      assert.equal((err as X402SettlementError).reason, 'transfer_not_found');
+      return true;
+    },
+  );
 });
 
 test('settleX402Payment throws X402SettlementError when facilitator rejects', async () => {

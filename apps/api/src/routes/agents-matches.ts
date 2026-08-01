@@ -1,12 +1,9 @@
 // /v1/agents/matches/* — Sprint X20 spectator demo + X15 paid retries.
 //
 // X20 shipped POST /v1/agents/matches/start-solo as the spectator MVP.
-// Hotfix C1 closes the anonymous-call hole that shipped with X20: every
-// route here now requires SIWA receipt + ERC-8128 per-request signature
-// (mirrors /v1/agents/scores). The server's agent wallet
-// (AGENT_PRIVATE_KEY) still pays for x402 + chargeRetryFee — C1 gates
-// who can *trigger* a spend, not whose wallet pays. Binding SIWA-agent
-// identity to the billing wallet is X21 scope.
+// Every route here requires SIWA receipt + ERC-8128 per-request signature.
+// The authenticated address must also match AGENT_PRIVATE_KEY: the same
+// identity owns the run, signs the x402 payment, and pays chargeRetryFee.
 //
 // X15.6 inverts the previously-synchronous flow: the handler reserves a
 // duel_runs row, inserts a pending x15_payment_attempts row, returns
@@ -16,7 +13,7 @@
 // duel_moves (move-by-move) and x15_payment_attempts (settlement
 // progress) keyed on the returned runId.
 
-import type { Address, Hex } from 'viem';
+import { type Address, type Hex, getAddress } from 'viem';
 import { createRoute, OpenAPIHono } from '@hono/zod-openapi';
 import { waitUntil } from '@vercel/functions';
 import { ErrorEnvelopeSchema } from '../schemas/common.js';
@@ -27,6 +24,7 @@ import {
 import { rateLimit } from '../lib/rate-limit.js';
 import { TOURNAMENT_POOL_ABI } from '../lib/contracts-vendored/abi.js';
 import { TOURNAMENT_POOL_V21_ADDRESS } from '../lib/contracts-vendored/addresses.js';
+import { getAgentAccount } from '../lib/contracts-vendored/attestation.js';
 import { chargeRetryFeeIfRequired } from '../lib/duel/charge-retry-fee.js';
 import { reserveSoloRun, runSoloMatch } from '../lib/duel/runner.js';
 import { BUILDER_CODES } from '../lib/games.js';
@@ -41,6 +39,20 @@ import { ApiError } from '../middleware/errorEnvelope.js';
 
 export const agentMatchesRoutes = new OpenAPIHono();
 
+export function assertAgentWalletMatches(
+  authenticatedAddress: string,
+  configuredAddress: Address,
+): Address {
+  if (getAddress(authenticatedAddress) !== getAddress(configuredAddress)) {
+    throw new ApiError(
+      403,
+      'AGENT_WALLET_MISMATCH',
+      'The authenticated SIWA agent is not the configured billing wallet.',
+    );
+  }
+  return configuredAddress;
+}
+
 const APEX_WATCH_BASE_URL =
   process.env.APEX_WATCH_BASE_URL ?? 'https://www.skillbase.games/watch';
 
@@ -49,7 +61,7 @@ const startSoloRoute = createRoute({
   path: '/v1/agents/matches/start-solo',
   summary: 'Start a solo agent match (X20 spectator MVP + X15 paid retries)',
   description:
-    'Agent-authenticated via SIWA receipt + ERC-8128 per-request signature (Hotfix C1). Reserves a duel_runs row, inserts a pending x15_payment_attempts row, and returns 202 + runId. The handler does NOT block on x402 settlement or chargeRetryFee — those run in a background worker (waitUntil) along with the actual game loop. Spectator UI subscribes to two Realtime channels on the returned runId: duel_moves for move-by-move state, x15_payment_attempts for settlement progress (pending → x402_settled → anchored/skipped). The signing wallet that pays for x402 + chargeRetryFee remains the server agent (AGENT_PRIVATE_KEY); SIWA only gates who may trigger a spend.',
+    'Agent-authenticated via SIWA receipt + ERC-8128 per-request signature. The authenticated address must match the configured AGENT_PRIVATE_KEY before any reservation or payment starts. Reserves a duel_runs row, inserts a pending x15_payment_attempts row, and returns 202 + runId. The handler does NOT block on x402 settlement or chargeRetryFee — those run in a background worker (waitUntil) along with the actual game loop.',
   tags: ['agents'],
   security: [{ siwaReceipt: [] }],
   request: {
@@ -94,8 +106,14 @@ agentMatchesRoutes.openapi(startSoloRoute, async (c) => {
 
   let reserved;
   try {
-    reserved = await reserveSoloRun({ game: body.game });
+    const configuredAgent = getAgentAccount().address;
+    assertAgentWalletMatches(agent.address, configuredAgent);
+    reserved = await reserveSoloRun({
+      game: body.game,
+      agentAddress: configuredAgent,
+    });
   } catch (err) {
+    if (err instanceof ApiError) throw err;
     console.error('[agent-matches] reserveSoloRun failed', err);
     throw new ApiError(
       502,
@@ -136,6 +154,7 @@ agentMatchesRoutes.openapi(startSoloRoute, async (c) => {
         runId: reserved.runId,
         seed: reserved.seed,
         game: body.game,
+        agentAddress: reserved.agentAddress,
       }).catch((err) => {
         console.error('[agent-matches] dev-mode run failed', err);
       }),
@@ -306,6 +325,7 @@ async function orchestrateAgentRun(args: OrchestrateArgs): Promise<void> {
       runId: args.runId,
       seed: args.seed,
       game: args.game,
+      agentAddress: args.agentAddress,
     });
   } catch (err) {
     // runSoloMatch already swallows + marks duel_runs.status='error'

@@ -22,6 +22,7 @@ const {
   mergeScoreHistory,
   compareScoreHistoryNewestFirst,
   paginateScoreHistory,
+  assertSupportedScoreTier,
 } = await import('../src/routes/scores.js');
 
 import type {
@@ -30,6 +31,20 @@ import type {
 } from '../src/routes/scores.js';
 
 const ZERO32 = `0x${'0'.repeat(64)}`;
+
+test('assertSupportedScoreTier: accepts T0 and rejects unverified higher tiers', () => {
+  assert.doesNotThrow(() => assertSupportedScoreTier('T0'));
+  for (const tier of ['T1', 'T2', 'T3'] as const) {
+    assert.throws(
+      () => assertSupportedScoreTier(tier),
+      (err: unknown) =>
+        typeof err === 'object' &&
+        err !== null &&
+        'code' in err &&
+        err.code === 'TIER_NOT_IMPLEMENTED',
+    );
+  }
+});
 
 function dbRow(over: Partial<ScoreHistoryDbRow> = {}): ScoreHistoryDbRow {
   return {

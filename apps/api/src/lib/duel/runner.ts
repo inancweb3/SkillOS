@@ -27,10 +27,7 @@ import {
   TOURNAMENT_POOL_ABI,
   TOURNAMENT_POOL_V21_ADDRESS,
 } from '../contracts.js';
-import {
-  getAgentAccount,
-  signSoloSubmitAttestation,
-} from '../contracts-vendored/attestation.js';
+import { signSoloSubmitAttestation } from '../contracts-vendored/attestation.js';
 import { getWalletClient } from '../contracts-vendored/wallet-client.js';
 import { dataSuffixForGame } from '../games.js';
 import { getSupabaseClient } from '../supabase.js';
@@ -67,6 +64,8 @@ type EndReason = 'win' | 'game_over' | 'timeout' | 'stuck' | 'error';
 
 export interface StartSoloInput {
   game: '2048';
+  /** SIWA-authenticated agent that owns and pays for this run. */
+  agentAddress: Address;
 }
 
 export interface StartSoloResult {
@@ -82,7 +81,7 @@ export interface StartSoloResult {
  */
 export async function reserveSoloRun(input: StartSoloInput): Promise<StartSoloResult> {
   const seed: Hex = `0x${randomBytes(32).toString('hex')}` as Hex;
-  const agentAddress = getAgentAccount().address;
+  const agentAddress = input.agentAddress;
 
   const sb = getSupabaseClient();
   const { data, error } = await sb
@@ -109,6 +108,7 @@ interface RunSoloMatchArgs {
   runId: string;
   seed: string;
   game: '2048';
+  agentAddress: Address;
 }
 
 /**
@@ -119,7 +119,7 @@ interface RunSoloMatchArgs {
 export async function runSoloMatch(args: RunSoloMatchArgs): Promise<void> {
   const sb = getSupabaseClient();
   const startedAt = Date.now();
-  const agentAddress = getAgentAccount().address;
+  const agentAddress = args.agentAddress;
   let cumulativeScore = 0;
 
   try {
