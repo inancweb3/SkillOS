@@ -70,20 +70,18 @@ jobs:
         run: npm run build --workspace=@skillos/mcp
       - name: Run TS tests (node:test via tsx)
         # Direct invocation matches the local developer pattern — no
-        # turbo `test` task defined. 37 test files: 11 in duel-backend
-        # (incl. X23.2 cron-ratings, X20.1 F0 submit gate, X19 schema
-        # integrity, X14.1 ext profile log), 2 in sp-engine, 2 in ui
-        # (pure-helper tests, no RTL setup — duel-result-branch + X14.1
-        # extension-whitelist), 6 in apps/api (X10 server-side dataSuffix
-        # attribution, X23.3 rating endpoints, X15.5 Upstash rate-limit
-        # wiring, #4a-S4 tournaments, #4c scores, B-pluginV1 prepare-endpoint
-        # calldata), 1 in packages/contracts (X10b canonical Builder Code
-        # surface), 1 in packages/glicko-rating (X23.1 wrapper determinism),
-        # 1 in packages/anti-cheat (X20.0b F0 plausibility formula),
-        # 8 in packages/engines (Δ6: 2048 engine determinism + 6 per-game
-        # golden harnesses incl. registry + the 2048 golden gate), 7 in
-        # scripts/ (X32-4 stub smoke + 6 Δ6 live-vs-engine fidelity gates:
-        # 2048/wordle/sudoku/minesweeper/clicker/match3).
+        # turbo `test` task defined. 46 test files:
+        # 12 duel-backend (X23.2 cron-ratings, X20.1 F0 submit gate, X19
+        # schema integrity, X14.1 ext profile log, settle/reconcile),
+        # 2 ui (pure helpers; duel-result-branch + X14.1 extension-whitelist),
+        # 2 sp-engine, 1 contracts (X10b Builder Code), 1 glicko-rating,
+        # 1 anti-cheat (X20.0b F0 formula), 8 engines (Δ6 golden harnesses
+        # + registry + 2048 determinism),
+        # 9 apps/api (games, ratings, rate-limit, tournaments, scores,
+        # prepare, + PR#200 security: x402-client receipt/transfer,
+        # agents-matches wallet-bind, charge-retry-fee hermetic mocks),
+        # 8 scripts (X32-4 stub smoke + 6 Δ6 fidelity + faz0 resolver),
+        # 2 packages/mcp (delegation-signing, x402-fetch).
         # No user-controlled input is interpolated below — only fixed
         # repo-relative paths.
         run: |
@@ -121,6 +119,9 @@ jobs:
             apps/api/test/tournaments.test.ts \
             apps/api/test/scores.test.ts \
             apps/api/test/prepare.test.ts \
+            apps/api/test/x402-client.test.ts \
+            apps/api/test/agents-matches.test.ts \
+            apps/api/test/charge-retry-fee.test.ts \
             scripts/smoke-x32-4-stub.ts \
             scripts/fidelity-2048-live-vs-engine.test.ts \
             scripts/fidelity-wordle-live-vs-engine.test.ts \

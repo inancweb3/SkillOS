@@ -160,7 +160,7 @@ try {
 
 ## Type safety
 
-The SDK's request/response types are generated from `api.skillos.network/openapi.json` at build time (`npm run generate-types`). If you upgrade the SDK after an API change, all consumers see the new types automatically. No manual TS duplication; no drift.
+The SDK's request/response types are generated from the API OpenAPI document and committed to the repository. CI emits the spec locally and checks for drift, so normal installs and builds never depend on the production API being reachable. Maintainers can regenerate with `SKILLOS_OPENAPI_URL=file:///path/to/openapi.json npm run generate-types`.
 
 ## Compatibility
 

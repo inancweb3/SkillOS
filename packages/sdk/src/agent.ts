@@ -15,13 +15,8 @@
 //
 // Browser/React consumers use useSkillOSAgent from '@skillos/sdk/react'.
 
-// Subpath import (not barrel): the barrel re-exports signer/index.js which
-// eagerly imports peer-optional wallet SDKs (@circle-fin/developer-controlled-
-// wallets, @privy-io/node, @openfort/openfort-node) — SDK consumers that
-// don't install these would hit ERR_MODULE_NOT_FOUND at cold-start.
-import { signSIWAMessage } from '@buildersgarden/siwa/siwa';
 import type { Signer as SiwaSigner } from '@buildersgarden/siwa/signer';
-import { signAuthenticatedRequest } from '@buildersgarden/siwa/erc8128';
+import { signRequest } from '@slicekit/erc8128';
 import { SkillOSApiError } from './vanilla.js';
 
 export type SkillOSEnv = 'testnet' | 'mainnet';
@@ -116,7 +111,7 @@ export function createSkillOSAgentClient(
     if (!nonceRes.ok) throw await toApiError(nonceRes);
     const { nonce } = (await nonceRes.json()) as { nonce: string };
 
-    const { message, signature } = await signSIWAMessage(
+    const { message, signature } = await signSiwaMessage(
       {
         domain,
         uri,
@@ -200,6 +195,67 @@ export function createSkillOSAgentClient(
       },
     },
   };
+}
+
+/**
+ * Browser-safe SIWA client subset. The upstream convenience entry also
+ * imports server-only receipt/captcha helpers backed by node:crypto; pulling
+ * it into the React SDK made otherwise client-only bundles fail at runtime.
+ */
+async function signSiwaMessage(
+  fields: {
+    domain: string;
+    uri: string;
+    agentId: number;
+    agentRegistry: string;
+    chainId: number;
+    nonce: string;
+    issuedAt: string;
+  },
+  signer: SiwaSigner,
+): Promise<{ message: string; signature: string }> {
+  const address = await signer.getAddress();
+  const message = [
+    `${fields.domain} wants you to sign in with your Agent account:`,
+    address,
+    '',
+    '',
+    `URI: ${fields.uri}`,
+    'Version: 1',
+    `Agent ID: ${fields.agentId}`,
+    `Agent Registry: ${fields.agentRegistry}`,
+    `Chain ID: ${fields.chainId}`,
+    `Nonce: ${fields.nonce}`,
+    `Issued At: ${fields.issuedAt}`,
+  ].join('\n');
+  return { message, signature: await signer.signMessage(message) };
+}
+
+async function signAuthenticatedRequest(
+  request: Request,
+  receipt: string,
+  signer: SiwaSigner,
+  chainId: number,
+): Promise<Request> {
+  const headers = new Headers(request.headers);
+  headers.set('X-SIWA-Receipt', receipt);
+  const withReceipt = new Request(request, { headers });
+  const address = await signer.getAddress();
+  const httpSigner = {
+    address,
+    chainId,
+    signMessage: async (message: Uint8Array) => {
+      const raw = `0x${Array.from(message, (byte) =>
+        byte.toString(16).padStart(2, '0'),
+      ).join('')}` as `0x${string}`;
+      return signer.signRawMessage
+        ? signer.signRawMessage(raw)
+        : signer.signMessage(raw);
+    },
+  };
+  return signRequest(withReceipt, httpSigner, {
+    components: ['X-SIWA-Receipt'],
+  });
 }
 
 async function toApiError(res: Response): Promise<SkillOSApiError> {

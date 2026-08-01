@@ -20,26 +20,30 @@
   "devDependencies": {
     "@buildersgarden/siwa": "0.0.24",
     "@wagmi/core": "3.4.8",
+    "axios": "1.19.0",
     "eslint": "^9",
-    "eslint-config-next": "16.2.4",
+    "eslint-config-next": "^16.2.12",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "tsx": "^4.21.0",
-    "turbo": "^2.3.3",
+    "turbo": "^2.10.8",
     "typescript": "^5.6.3"
   },
   "overrides": {
-    "axios": "^1.15.0",
     "@coinbase/cdp-sdk": {
-      "axios": "^1.15.0"
+      "axios": "1.19.0"
     },
     "axios-retry": {
-      "axios": "^1.15.0"
-    }
+      "axios": "1.19.0"
+    },
+    "js-yaml": "4.3.0"
   },
   "engines": {
     "node": ">=20.0.0",
     "npm": ">=10.0.0"
   },
-  "packageManager": "npm@10.9.0"
+  "packageManager": "npm@10.9.0",
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "4.60.3"
+  }
 }

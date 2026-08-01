@@ -32,6 +32,7 @@ import { HTTPFacilitatorClient } from '@x402/core/server';
 
 import { CHAIN_ID, USDC_ADDRESS } from './contracts-vendored/addresses.js';
 import { getAgentAccount } from './contracts-vendored/attestation.js';
+import { getPublicClient } from './viem.js';
 
 // $1.05 atomic — kept in lock-step with X402_PRICES.agentMatchRetry in
 // x402.ts. USDC has 6 decimals on Base; 1_050_000 = $1.05.
@@ -136,9 +137,21 @@ interface FacilitatorClient {
   settle(payload: unknown, requirements: unknown): Promise<FacilitatorSettleResponse>;
 }
 
+interface X402ReceiptClient {
+  waitForTransactionReceipt(args: { hash: Hex }): Promise<{
+    status: string;
+    logs: readonly {
+      address: Address;
+      topics: readonly Hex[];
+      data: Hex;
+    }[];
+  }>;
+}
+
 export interface SettleX402PaymentDeps {
   facilitator?: FacilitatorClient;
   signer?: X402Signer;
+  publicClient?: X402ReceiptClient;
   /** Override for tests; production reads Date.now(). */
   now?: () => number;
   /** Override for tests; production uses node:crypto randomBytes. */
@@ -306,10 +319,34 @@ export async function settleX402Payment(
   }
 
   const txHash = response.transaction;
-  if (!txHash || typeof txHash !== 'string' || !txHash.startsWith('0x')) {
+  if (!txHash || typeof txHash !== 'string' || !/^0x[\da-fA-F]{64}$/.test(txHash)) {
     throw new X402SettlementError(
       'malformed_response',
       `facilitator returned non-hex transaction: ${String(txHash).slice(0, 80)}`,
+      response,
+    );
+  }
+
+  // The facilitator response is advisory. Do not mark a payment settled
+  // until Base confirms a successful receipt containing the exact USDC
+  // Transfer(from=agent, to=receiver, value=$1.05) we authorized.
+  const publicClient =
+    deps.publicClient ?? (getPublicClient() as unknown as X402ReceiptClient);
+  const receipt = await publicClient.waitForTransactionReceipt({
+    hash: txHash as Hex,
+  });
+  if (receipt.status !== 'success') {
+    throw new X402SettlementError(
+      'transaction_reverted',
+      `facilitator transaction ${txHash} did not succeed on-chain`,
+      response,
+    );
+  }
+
+  if (!hasExpectedUsdcTransfer(receipt.logs, signer.address, receiver, value)) {
+    throw new X402SettlementError(
+      'transfer_not_found',
+      'confirmed transaction did not contain the expected USDC Transfer',
       response,
     );
   }
@@ -319,6 +356,34 @@ export async function settleX402Payment(
     x402AmountAtomic: value,
     settledAt: new Date(now),
   };
+}
+
+const TRANSFER_EVENT_TOPIC =
+  '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+
+function hasExpectedUsdcTransfer(
+  logs: readonly { address: Address; topics: readonly Hex[]; data: Hex }[],
+  from: Address,
+  to: Address,
+  value: bigint,
+): boolean {
+  return logs.some((log) => {
+    if (getAddress(log.address) !== getAddress(USDC_ADDRESS)) return false;
+    if (log.topics.length !== 3 || log.topics[0]?.toLowerCase() !== TRANSFER_EVENT_TOPIC) {
+      return false;
+    }
+    try {
+      const loggedFrom = getAddress(`0x${log.topics[1]!.slice(-40)}`);
+      const loggedTo = getAddress(`0x${log.topics[2]!.slice(-40)}`);
+      return (
+        loggedFrom === getAddress(from) &&
+        loggedTo === getAddress(to) &&
+        BigInt(log.data) === value
+      );
+    } catch {
+      return false;
+    }
+  });
 }
 
 function defaultNonce(): Hex {

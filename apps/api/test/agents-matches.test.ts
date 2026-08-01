@@ -22,7 +22,7 @@ import assert from 'node:assert/strict';
 process.env.SIWA_RECEIPT_SECRET ??= 'a'.repeat(32);
 
 const { OpenAPIHono } = await import('@hono/zod-openapi');
-const { agentMatchesRoutes } = await import(
+const { agentMatchesRoutes, assertAgentWalletMatches } = await import(
   '../src/routes/agents-matches.js'
 );
 const { errorHandler } = await import('../src/middleware/errorEnvelope.js');
@@ -33,6 +33,23 @@ function buildApp() {
   app.onError(errorHandler);
   return app;
 }
+
+test('agent wallet binding rejects a different authenticated SIWA address', () => {
+  const configured = '0x0000000000000000000000000000000000000001';
+  assert.equal(assertAgentWalletMatches(configured, configured), configured);
+  assert.throws(
+    () =>
+      assertAgentWalletMatches(
+        '0x0000000000000000000000000000000000000002',
+        configured,
+      ),
+    (err: unknown) =>
+      typeof err === 'object' &&
+      err !== null &&
+      'code' in err &&
+      err.code === 'AGENT_WALLET_MISMATCH',
+  );
+});
 
 test('POST /v1/agents/matches/start-solo: anonymous request → 401', async () => {
   const app = buildApp();
