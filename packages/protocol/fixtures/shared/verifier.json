@@ -1,0 +1,9 @@
+{
+  "protocolVersion": "0.1.0",
+  "id": "skillos.deterministic.v1",
+  "version": "0.1.0",
+  "capabilities": [
+    "deterministic"
+  ],
+  "digest": "sha256:1ac49d81b56f4a1e1adb3ebdbeab964c704ebcc0987ae9c3b3b173e252757344"
+}

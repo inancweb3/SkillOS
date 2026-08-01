@@ -1,0 +1,17 @@
+{
+  "protocolVersion": "0.1.0",
+  "evidenceId": "01jgame2048fixture0000000001",
+  "manifestDigest": "sha256:9771d2d2adb34c2f52c89e0ee930653256055a2eb3957148bc518bfc815280d1",
+  "evidenceDigest": "sha256:85cfd0ca3af57740c78a6aa02c2ff15c9024342ca3d433d72ec4ccdf7fbad9e2",
+  "verifierId": "skillos.deterministic.v1",
+  "verifierVersion": "0.1.0",
+  "verifierDigest": "sha256:1ac49d81b56f4a1e1adb3ebdbeab964c704ebcc0987ae9c3b3b173e252757344",
+  "status": "verified",
+  "disqualifications": [],
+  "measurements": {
+    "score": 4820,
+    "match_count_delta": 1
+  },
+  "verifiedAt": "2026-08-01T12:00:01.000Z",
+  "resultDigest": "sha256:31f456e397eb79959df26b1b2ff90b78811da4fbb05c4bdd9fce7fcb907a29ce"
+}

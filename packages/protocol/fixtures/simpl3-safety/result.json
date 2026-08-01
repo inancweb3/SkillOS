@@ -1,0 +1,17 @@
+{
+  "protocolVersion": "0.1.0",
+  "evidenceId": "01jsimpl3safetyfixture000001",
+  "manifestDigest": "sha256:463251994ea3415c18d0e5dfb99eb9ce8e26563d174aad6ffbd2bf2ab51d84ba",
+  "evidenceDigest": "sha256:7b975ef6e379848a3713f56b54beef7b47de262865801b9af2321fdfbc50ddc0",
+  "verifierId": "skillos.deterministic.v1",
+  "verifierVersion": "0.1.0",
+  "verifierDigest": "sha256:1ac49d81b56f4a1e1adb3ebdbeab964c704ebcc0987ae9c3b3b173e252757344",
+  "status": "verified",
+  "disqualifications": [],
+  "measurements": {
+    "policy_pass": 1,
+    "tool_boundary_ok": 1
+  },
+  "verifiedAt": "2026-08-01T12:30:01.000Z",
+  "resultDigest": "sha256:2ef213e1fcb4a9f7408b91309137cccb8232966ee1003411ed8ddea6e30004bd"
+}

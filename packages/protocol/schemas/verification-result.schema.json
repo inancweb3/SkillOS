@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skillos.network/protocol/v0.1/verification-result.schema.json",
+  "title": "VerificationResult",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocolVersion",
+    "evidenceId",
+    "manifestDigest",
+    "evidenceDigest",
+    "verifierId",
+    "verifierVersion",
+    "verifierDigest",
+    "status",
+    "disqualifications",
+    "measurements",
+    "resultDigest",
+    "verifiedAt"
+  ],
+  "properties": {
+    "protocolVersion": {
+      "type": "string",
+      "const": "0.1.0"
+    },
+    "evidenceId": { "type": "string", "minLength": 1 },
+    "manifestDigest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "evidenceDigest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "verifierId": { "type": "string", "minLength": 1 },
+    "verifierVersion": { "type": "string", "minLength": 1 },
+    "verifierDigest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["verified", "rejected", "error"]
+    },
+    "disqualifications": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "measurements": {
+      "type": "object",
+      "additionalProperties": { "type": "number" }
+    },
+    "resultDigest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "verifiedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "signature": {
+      "type": "string",
+      "description": "Optional in v0.1. Settlement-grade validators may require later."
+    }
+  }
+}

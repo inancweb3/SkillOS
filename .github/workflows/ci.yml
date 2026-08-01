@@ -70,7 +70,7 @@ jobs:
         run: npm run build --workspace=@skillos/mcp
       - name: Run TS tests (node:test via tsx)
         # Direct invocation matches the local developer pattern — no
-        # turbo `test` task defined. 46 test files:
+        # turbo `test` task defined. 48 test files:
         # 12 duel-backend (X23.2 cron-ratings, X20.1 F0 submit gate, X19
         # schema integrity, X14.1 ext profile log, settle/reconcile),
         # 2 ui (pure helpers; duel-result-branch + X14.1 extension-whitelist),
@@ -131,7 +131,9 @@ jobs:
             scripts/fidelity-match3-live-vs-engine.test.ts \
             scripts/faz0/resolver.test.ts \
             packages/mcp/test/delegation-signing.test.ts \
-            packages/mcp/test/x402-fetch.test.ts
+            packages/mcp/test/x402-fetch.test.ts \
+            packages/protocol/test/protocol.test.ts \
+            packages/protocol/test/browser-smoke.test.ts
 
 
   # Status check name: test-foundry

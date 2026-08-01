@@ -1,0 +1,34 @@
+{
+  "protocolVersion": "0.1.0",
+  "evidenceId": "01jgame2048fixture0000000001",
+  "manifestDigest": "sha256:9771d2d2adb34c2f52c89e0ee930653256055a2eb3957148bc518bfc815280d1",
+  "subject": {
+    "type": "human",
+    "id": "0x2222222222222222222222222222222222222222",
+    "version": "1"
+  },
+  "provenance": {
+    "configDigest": "sha256:3e01509113878abed866e0989e278623f8d6818461b420e7905d5af8424ed2b5",
+    "inputDigest": "sha256:23314cedc691b13be4727e8ac323d42c4762b413a2116a2639090817c0eca746",
+    "codeCommit": "fixture-tree-game-2048"
+  },
+  "artifacts": [
+    {
+      "mediaType": "application/vnd.skillos.game-replay+json",
+      "digest": "sha256:03a236e4c08f51720ba4ffd5a25335d4448f63bc2f47cc1bf6bccdace23400e4",
+      "availability": "redacted",
+      "role": "replay"
+    }
+  ],
+  "metrics": {
+    "score": 4820,
+    "tournamentId": "0x1111111111111111111111111111111111111111111111111111111111111111",
+    "nonce": "0x3333333333333333333333333333333333333333333333333333333333333333"
+  },
+  "measurements": {
+    "score": 4820,
+    "match_count_delta": 1
+  },
+  "createdAt": "2026-08-01T12:00:00.000Z",
+  "signature": "test-sig-game-2048"
+}

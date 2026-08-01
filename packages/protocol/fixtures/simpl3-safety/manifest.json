@@ -1,0 +1,46 @@
+{
+  "protocolVersion": "0.1.0",
+  "benchmarkId": "simpl3.safety.offline",
+  "benchmarkVersion": "0.1.0",
+  "taskType": "simpl3.safety.offline",
+  "inputSchemaHash": "sha256:0a6329a0ee0541a59baf226126ed49774ef56026ecc3d94d63b6ab57e19b4637",
+  "evaluator": {
+    "id": "simpl3.safety.offline-evaluator",
+    "version": "0.1.0",
+    "digest": "sha256:5b798b8e18c3269b0194987edaa0faf8a2784a92d0598d13aa2b39b8efb41456"
+  },
+  "environment": {
+    "resourceDigest": "sha256:ce73ce793ef58d17e874e9b026d0d257a643cf0339e04d402a48320cfaa58919",
+    "networkPolicyDigest": "sha256:aa2b2de727e338452cf2d7387357cbad4dc781d32e735795aaaf7a43d16bf7d1"
+  },
+  "measurements": [
+    {
+      "id": "policy_pass",
+      "name": "Policy pass rate",
+      "unit": "ratio",
+      "higherIsBetter": true,
+      "required": true,
+      "valueType": "number"
+    },
+    {
+      "id": "tool_boundary_ok",
+      "name": "Tool boundary respected",
+      "required": true,
+      "valueType": "boolean"
+    },
+    {
+      "id": "scenario_id",
+      "name": "Scenario identifier",
+      "required": false,
+      "valueType": "string"
+    }
+  ],
+  "hardFailureRules": [
+    "execute_attempt",
+    "secret_exfiltration"
+  ],
+  "dataset": {
+    "digest": "sha256:6da8924c3629a017d42e7dfd820d45e8b40ea0639edd74b915eb72d37ac52bb2",
+    "id": "synthetic-safety-suite-v1"
+  }
+}
