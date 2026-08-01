@@ -1,6 +1,6 @@
 # ADR 0005 — Arena / Evidence Protocol v0.1 (Offchain-First)
 
-**Status:** Proposed — awaiting architectural approval (Phase 1A)
+**Status:** Accepted — 2026-08-01 (Codex architecture review)
 **Date:** 2026-08-01
 **Deciders:** Product owner (İnanç Ayvaz); technical lead/reviewer (Codex); implementation (Grok Build)
 **Primary repo:** `youngstar-eth/SkillOS`
@@ -8,7 +8,7 @@
 
 ## Status
 
-**Proposed.** This ADR freezes the **offchain protocol contract** for `@skillos/protocol` **v0.1.0**. No package implementation ships in this decision record. Implementation is gated on Codex acceptance of this ADR (Phase 1B).
+**Accepted — 2026-08-01 (Codex architecture review).** This ADR freezes the **offchain protocol contract** for `@skillos/protocol` **v0.1.0**. No package implementation ships in this decision record. Phase **1B** (package implementation) is now unblocked.
 
 ## Context
 
@@ -55,17 +55,17 @@ Without a frozen ADR:
 - First release: **`0.1.0`**.
 - Consumption: npm package pin or vendored JSON Schema + golden fixtures — **no** `file:../SkillOS` relative imports between repos.
 
-#### D1.1 — Supported `protocolVersion` range (normative)
+#### D1.1 — Supported `protocolVersion` (normative; strict const)
 
-- Every protocol-owned top-level document MUST include `protocolVersion` as a **semver** string (`MAJOR.MINOR.PATCH`, optional pre-release not used in v0.1 fixtures).
-- **v0.1 implementation accepts only major version `0` with minor `1`:** supported range is **`0.1.x`** (e.g. `0.1.0`, `0.1.1`).
+- Every protocol-owned top-level document MUST include `protocolVersion`.
+- **v0.1 strict schema accepts exactly one value:** `protocolVersion: "0.1.0"` (JSON Schema `const` / single-value enum). No other string is valid under the v0.1 schema registry entry.
 - **Unsupported-version behavior:** parsers/validators MUST fail closed with a distinct error class/code (e.g. `UNSUPPORTED_PROTOCOL_VERSION`) when:
-  - major ≠ `0`, or
-  - major = `0` and minor ≠ `1`, or
-  - the string is not a valid semver, or
-  - the field is missing.
-- Future `0.2.x` / `1.x` require a new protocol release; v0.1 clients MUST NOT silently accept them.
-- Within `0.1.x`, optional fields may be added in later patches; required-field removal or renames are **not** allowed without a major bump beyond this ADR’s 0.1 line.
+  - the value is not exactly `"0.1.0"`, or
+  - the field is missing, or
+  - the field is not a string.
+- **Package semver ≠ protocol document version:** npm/package **patch** releases of `@skillos/protocol` (e.g. `0.1.1`, `0.1.2` bugfixes) **MUST NOT** change the accepted `protocolVersion` string or the normative v0.1 document shape. Package patches may fix validators, docs, fixtures, or tooling only.
+- **New schema fields or required-field / semantics changes** require a **new protocol version** (e.g. `"0.2.0"`) **and** a new schema registry entry. v0.1 clients MUST NOT silently accept other protocol versions.
+- Future `0.2.x` / `1.x` are separate protocol releases with their own schemas; v0.1 validators remain locked to `"0.1.0"`.
 
 ### D2 — Core document types (normative names)
 
@@ -173,7 +173,7 @@ Producer-submitted evidence (Simpl3 eval runner or game adapter):
 
 ```text
 {
-  protocolVersion,                 // must be in supported 0.1.x range
+  protocolVersion,                 // const "0.1.0" under v0.1 schema (D1.1)
   evidenceId,
   manifestDigest,                  // REQUIRED — digest of BenchmarkManifest (full document)
   evidenceDigest,                  // REQUIRED — digest of EvidenceEnvelope under evidence projection
@@ -183,7 +183,7 @@ Producer-submitted evidence (Simpl3 eval runner or game adapter):
   measurements: Record<string, number>,  // multi-axis numeric score vector only (see D2.1)
   resultDigest,                    // digest of this result under result projection
   verifiedAt,
-  signature                        // optional in v0.1 unit tests with test keys; settlement-grade later
+  signature?                       // OPTIONAL in v0.1 (schema: not required). Settlement-grade validators MAY require signature later without changing this ADR’s v0.1 optionality.
 }
 ```
 
@@ -195,7 +195,11 @@ Binding rules (enforced by recompute helpers, D3.3): `manifestDigest` / `evidenc
 
 1. **Canonical serialization** for all digest inputs is **RFC 8785 JSON Canonicalization Scheme (JCS)** applied to a JSON value, producing a unique **UTF-8** byte sequence.
 2. Implementations MUST NOT invent an alternate key-sort/whitespace algorithm; behavior is defined by RFC 8785.
-3. **Numbers:** only finite JSON numbers that JCS can represent safely are allowed. **`NaN`, `Infinity`, `-Infinity`, and non-finite values MUST be rejected** before canonicalization. Values that cannot be represented without precision loss relative to the protocol’s numeric rules MUST be rejected (fail closed).
+3. **Numbers (normative, fail closed before canonicalization):**
+   - **Integer values** (whole numbers used as integers, including measurement integers and any integer-typed fields) MUST satisfy **`Number.isSafeInteger`** (IEEE-754 safe integer range: −(2⁵³−1) … 2⁵³−1). Values outside that range, or non-integer numeric tokens where an integer is required, MUST be rejected.
+   - **Fractional values** MUST be **finite** IEEE-754 doubles that JCS can represent without inventing an alternate number encoding. After parse, the value MUST be finite (`Number.isFinite`).
+   - **MUST reject:** `NaN`, `+Infinity`, `-Infinity`, and **negative zero (`-0`)**. Implementations MUST treat `-0` as invalid for protocol-owned numbers (normalize-or-accept is **not** allowed; reject so digests cannot diverge on signed zero).
+   - Values that cannot be represented without precision loss relative to these rules MUST be rejected (fail closed).
 4. **Digest algorithm and encoding (fixed for v0.1):**
    `digest = "sha256:" + lowercase_hex( SHA-256( utf8_bytes( JCS(value) ) ) )`
    where `lowercase_hex` is exactly **64** characters `[0-9a-f]`.
@@ -227,7 +231,7 @@ The package MUST expose **separate** helpers (names illustrative; behavior norma
 
 | API | Responsibility |
 |-----|----------------|
-| **`parseAndValidateSchema(document, schemaId)`** | JSON parse (if needed) + **Draft 2020-12** validation including `additionalProperties: false` and `protocolVersion` range (D1.1). Does **not** recompute digests. |
+| **`parseAndValidateSchema(document, schemaId)`** | JSON parse (if needed) + **Draft 2020-12** validation including `additionalProperties: false` and `protocolVersion` const `"0.1.0"` (D1.1). Does **not** recompute digests. |
 | **`assertDigestFormat(digest: string)`** | Enforces `sha256:` + 64 lowercase hex only. |
 | **`computeDigest(value, projection)`** | Apply projection (D3.1), JCS, SHA-256, format string. |
 | **`assertDigestBinding({...})`** | Given concrete objects, recompute digests and assert equality for manifest / evidence / verifier / result bindings. Fails on mismatch (`DIGEST_MISMATCH`). |
@@ -257,7 +261,7 @@ v0.1 validation/canonicalization/hash MUST be **browser-safe** and Node-safe wit
 
 ### D3.5 — Summary of rejections (parsers)
 
-MUST fail closed on: unsupported `protocolVersion` (D1.1); schema violation / extra properties; invalid digest format; digest mismatch on binding; non-finite or unsafe numbers; invalid status enums.
+MUST fail closed on: `protocolVersion` ≠ `"0.1.0"` (D1.1); schema violation / extra properties; invalid digest format; digest mismatch on binding; non-safe-integer integers; non-finite fractionals; `NaN` / infinities / `-0`; invalid status enums.
 
 ### D4 — Onchain vs offchain placement
 
@@ -355,13 +359,13 @@ Protocol package v0.1 only needs `VerificationResult.status`: `verified` | `reje
 
 ## Implementation gate (Phase 1B)
 
-Codex (or product owner) marks this ADR **Accepted**. Then Grok Build may:
+This ADR is **Accepted** (2026-08-01, Codex architecture review). Grok Build may now:
 
-1. Implement `@skillos/protocol@0.1.0` per D1–D10.
+1. Implement `@skillos/protocol@0.1.0` per D1–D10 (schema const `protocolVersion: "0.1.0"`; number rules; optional `VerificationResult.signature`).
 2. Add schemas, validators, digests, fixtures, adapter, tests.
 3. **Not** open agent-funded production spend; **not** wire Simpl3 execute tools.
 
-Out of 1B unless separately authorized: arena HTTP endpoints, MCP tool surface expansion, onchain anchoring, staked resolution.
+Out of 1B unless separately authorized: arena HTTP endpoints, MCP tool surface expansion, onchain anchoring, staked resolution, settlement-grade **required** signatures (v0.1 keeps `signature?`).
 
 ## Alternatives considered
 
@@ -383,10 +387,10 @@ Out of 1B unless separately authorized: arena HTTP endpoints, MCP tool surface e
 
 ## Approval checklist (reviewer)
 
-- [ ] Domain-neutral types cover game + Simpl3 eval without special-case core fields
-- [ ] Privacy/onchain placement is sufficient for public evidence
-- [ ] Digest/canonicalization choice is implementable and testable
-- [ ] Legacy `TournamentPool` / score API unbroken by design
-- [ ] SkillOS cannot gain Simpl3 execute authority via this protocol
-- [ ] Ops soak correctly non-blocking for 1B package work
-- [ ] Status → **Accepted** (or request revisions)
+- [x] Domain-neutral types cover game + Simpl3 eval without special-case core fields
+- [x] Privacy/onchain placement is sufficient for public evidence
+- [x] Digest/canonicalization choice is implementable and testable
+- [x] Legacy `TournamentPool` / score API unbroken by design
+- [x] SkillOS cannot gain Simpl3 execute authority via this protocol
+- [x] Ops soak correctly non-blocking for 1B package work
+- [x] Status → **Accepted — 2026-08-01 (Codex architecture review)**
