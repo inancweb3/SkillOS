@@ -53,13 +53,30 @@ Without a frozen ADR:
 
 - Ship `@skillos/protocol` as a **versioned offchain package** (Apache-2.0 intended for open core; exact license file in 1B).  
 - First release: **`0.1.0`**.  
-- Field `protocolVersion` on every top-level document is a **semver string**; parsers **reject** unknown **major** versions.  
-- Minor/patch may add optional fields; breaking field renames/removals require major bump.  
 - Consumption: npm package pin or vendored JSON Schema + golden fixtures — **no** `file:../SkillOS` relative imports between repos.
+
+#### D1.1 — Supported `protocolVersion` range (normative)
+
+- Every protocol-owned top-level document MUST include `protocolVersion` as a **semver** string (`MAJOR.MINOR.PATCH`, optional pre-release not used in v0.1 fixtures).  
+- **v0.1 implementation accepts only major version `0` with minor `1`:** supported range is **`0.1.x`** (e.g. `0.1.0`, `0.1.1`).  
+- **Unsupported-version behavior:** parsers/validators MUST fail closed with a distinct error class/code (e.g. `UNSUPPORTED_PROTOCOL_VERSION`) when:
+  - major ≠ `0`, or  
+  - major = `0` and minor ≠ `1`, or  
+  - the string is not a valid semver, or  
+  - the field is missing.  
+- Future `0.2.x` / `1.x` require a new protocol release; v0.1 clients MUST NOT silently accept them.  
+- Within `0.1.x`, optional fields may be added in later patches; required-field removal or renames are **not** allowed without a major bump beyond this ADR’s 0.1 line.
 
 ### D2 — Core document types (normative names)
 
-Implement in 1B as TypeScript types + JSON Schema (draft 2020-12 or equivalent). Conceptual shape:
+Implement in 1B as TypeScript types + **JSON Schema Draft 2020-12** (see D2.0). Conceptual shape:
+
+#### D2.0 — Schema standard and closed objects (normative)
+
+- **Canonical schema language for all protocol-owned documents is JSON Schema Draft 2020-12** (`$schema` must identify 2020-12). No alternate meta-schema (Draft-07, OpenAPI-only, Zod-as-source-of-truth without JSON Schema emit) is normative for interchange.  
+- **Every protocol-owned object schema** (including nested objects in ArenaDefinition, BenchmarkManifest, EvidenceEnvelope, MeasurementDefinition, VerifierDescriptor, VerificationResult, artifact descriptors, subject, provenance, evaluator, etc.) MUST set **`additionalProperties: false`**.  
+- Arrays of objects use item schemas that likewise set `additionalProperties: false`.  
+- Unknown keys are a **hard validation failure**, not stripped-and-accepted.
 
 #### `ArenaDefinition`
 
@@ -99,10 +116,28 @@ Pins what is being evaluated:
 #### `MeasurementDefinition`
 
 ```text
-{ id, name?, unit?, higherIsBetter?, required?, valueType: number|boolean|string }
+{ id, name?, unit?, higherIsBetter?, required?, valueType: "number" | "boolean" | "string" }
 ```
 
 Multi-axis is required; aggregate scalar score is **optional** derived metric, not the sole representation.
+
+#### `MeasurementValue` (normative shared type)
+
+```text
+type MeasurementValue = number | string | boolean
+```
+
+- Used for producer-side structured measurement **values** on evidence (`measurements` map or list aligned to definitions) and for any intermediate metric bags that are not verifier-normalized.  
+- `valueType` on `MeasurementDefinition` constrains which arm of `MeasurementValue` is legal for that axis.  
+- **VerificationResult.measurements** remains `Record<string, number>` (see D2.1): verifier-normalized **scores for ranking/gates** are numeric only; boolean/string axes must be mapped by the verifier into numeric codes or omitted from `VerificationResult.measurements` and reflected only in `disqualifications` / status. This is intentional: settlement-grade multi-axis outputs are comparable numbers; free-form strings belong in evidence, not in the result score vector.
+
+#### D2.1 — Why VerificationResult measurements are numeric-only (normative rationale)
+
+Verifiers emit a **score vector** for leaderboards, hard gates, and future settlement. Numbers are total-ordered and digest-stable under JCS. Booleans/strings as first-class result measurements would force ambiguous ordering and locale/format instability. Therefore:
+
+- Evidence MAY carry full `MeasurementValue`.  
+- `VerificationResult.measurements` MUST be `Record<string, number>` only.  
+- Non-numeric outcomes that fail a rule use `status: "rejected"` and `disqualifications[]` (string rule IDs), not string values inside `measurements`.
 
 #### `EvidenceEnvelope`
 
@@ -126,33 +161,103 @@ Producer-submitted evidence (Simpl3 eval runner or game adapter):
 #### `VerifierDescriptor`
 
 ```text
-{ id, version, digest, capabilities: ("deterministic"|"staked"|"hybrid")[] }
+{
+  id,
+  version,
+  digest,   // digest of this descriptor under projection D3.2 (excludes the digest field itself)
+  capabilities: ("deterministic" | "staked" | "hybrid")[]
+}
 ```
 
 #### `VerificationResult`
 
 ```text
 {
-  protocolVersion,
+  protocolVersion,                 // must be in supported 0.1.x range
   evidenceId,
+  manifestDigest,                  // REQUIRED — digest of BenchmarkManifest (full document)
+  evidenceDigest,                  // REQUIRED — digest of EvidenceEnvelope under evidence projection
   verifierId, verifierVersion, verifierDigest,
   status: "verified" | "rejected" | "error",
   disqualifications: string[],
-  measurements: Record<string, number>,  // multi-axis numeric outputs
-  resultDigest,
+  measurements: Record<string, number>,  // multi-axis numeric score vector only (see D2.1)
+  resultDigest,                    // digest of this result under result projection
   verifiedAt,
-  signature  // required for accepted settlement-grade results in later phases; v0.1 tests may use test keys
+  signature                        // optional in v0.1 unit tests with test keys; settlement-grade later
 }
 ```
 
-Verifier output **binds** to manifest digest, evidence id/digest, and verifier version/digest (fields and digests must be consistent under canonical serialization).
+Binding rules (enforced by recompute helpers, D3.3): `manifestDigest` / `evidenceDigest` / `verifierDigest` / `resultDigest` MUST match recomputation over the stated projections; mismatches → validation failure.
 
-### D3 — Canonical serialization and digests
+### D3 — Canonical serialization and digests (normative)
 
-1. **Canonical JSON:** UTF-8, object keys sorted lexicographically at every level, no insignificant whitespace, arrays preserve order, numbers as JSON numbers (no NaN/Infinity).  
-2. **Digest:** `sha256` over canonical UTF-8 bytes; hex encoding lowercase, or multihash later — **v0.1 fixes `sha256:` + 64 hex** (document exact prefix in package README).  
-3. **Digest fields** (`manifestDigest`, `inputDigest`, `resultDigest`, artifact digests) MUST match recomputation; validators reject mismatch.  
-4. Parsers reject: unknown major `protocolVersion`, missing required fields, invalid digests, status enums outside the set.
+#### D3.0 — JCS (RFC 8785) + UTF-8 + digest string format
+
+1. **Canonical serialization** for all digest inputs is **RFC 8785 JSON Canonicalization Scheme (JCS)** applied to a JSON value, producing a unique **UTF-8** byte sequence.  
+2. Implementations MUST NOT invent an alternate key-sort/whitespace algorithm; behavior is defined by RFC 8785.  
+3. **Numbers:** only finite JSON numbers that JCS can represent safely are allowed. **`NaN`, `Infinity`, `-Infinity`, and non-finite values MUST be rejected** before canonicalization. Values that cannot be represented without precision loss relative to the protocol’s numeric rules MUST be rejected (fail closed).  
+4. **Digest algorithm and encoding (fixed for v0.1):**  
+   `digest = "sha256:" + lowercase_hex( SHA-256( utf8_bytes( JCS(value) ) ) )`  
+   where `lowercase_hex` is exactly **64** characters `[0-9a-f]`.  
+5. Digest **format** validation is a separate check from content recompute (see D3.3): strings not matching `^sha256:[0-9a-f]{64}$` are rejected as `INVALID_DIGEST_FORMAT`.
+
+#### D3.1 — Digest projections (what is hashed)
+
+| Object | Projection for its content digest | Notes |
+|--------|-----------------------------------|--------|
+| **BenchmarkManifest** | **Entire document** | All fields; no omissions. |
+| **EvidenceEnvelope** | Document **with `signature` removed** (omit key) | If `signature` absent, hash whole document. |
+| **VerifierDescriptor** | Document **with its own `digest` field removed** | Self-digest does not include the digest field. |
+| **VerificationResult** | Document **with `resultDigest` and `signature` removed** | Binding fields `manifestDigest` / `evidenceDigest` remain inside the projection. |
+
+Artifact digests and other nested digests hash the artifact payload bytes or nested JCS object as specified by the artifact descriptor in 1B schemas; top-level rules above are fixed here.
+
+#### D3.2 — Storing digests on objects
+
+- `BenchmarkManifest` does not need an embedded self-digest field; consumers compute `manifestDigest = Digest(full manifest)`.  
+- `EvidenceEnvelope.manifestDigest` MUST equal `Digest(full manifest)`.  
+- `EvidenceEnvelope` content digest for binding is `evidenceDigest = Digest(evidence without signature)`.  
+- `VerifierDescriptor.digest` MUST equal `Digest(descriptor without digest field)`.  
+- `VerificationResult.manifestDigest` / `evidenceDigest` are **required** and MUST equal the corresponding digests.  
+- `VerificationResult.resultDigest` MUST equal `Digest(result without resultDigest and signature)`.
+
+#### D3.3 — Separate validation APIs (1B surface; normative split)
+
+The package MUST expose **separate** helpers (names illustrative; behavior normative):
+
+| API | Responsibility |
+|-----|----------------|
+| **`parseAndValidateSchema(document, schemaId)`** | JSON parse (if needed) + **Draft 2020-12** validation including `additionalProperties: false` and `protocolVersion` range (D1.1). Does **not** recompute digests. |
+| **`assertDigestFormat(digest: string)`** | Enforces `sha256:` + 64 lowercase hex only. |
+| **`computeDigest(value, projection)`** | Apply projection (D3.1), JCS, SHA-256, format string. |
+| **`assertDigestBinding({...})`** | Given concrete objects, recompute digests and assert equality for manifest / evidence / verifier / result bindings. Fails on mismatch (`DIGEST_MISMATCH`). |
+
+Callers MAY run schema validation without binding checks (e.g. draft UIs). Settlement-grade and golden tests MUST run **schema + format + binding**.
+
+#### D3.4 — Browser-safe tooling approach (normative preference)
+
+v0.1 validation/canonicalization/hash MUST be **browser-safe** and Node-safe without native addons:
+
+| Concern | Chosen approach |
+|---------|-----------------|
+| Schema | Pure JS/WASM-free or pure JS Draft 2020-12 validator usable in browser bundles (e.g. Ajv 2020 build **or** equivalent pure implementation). |
+| JCS | Pure JS RFC 8785 implementation. |
+| SHA-256 | `crypto.subtle.digest` in browsers; Node `crypto` / Web Crypto; no required native `sha256` addon. |
+
+**Rejected alternatives (for v0.1 normative path):**
+
+| Rejected | Reason |
+|----------|--------|
+| Node-only `fs` + CLI as sole validator | Blocks Simpl3 web/eval and browser agents |
+| Custom “sort keys + minify” instead of RFC 8785 | Interop risk; not a standard |
+| Multihash / non-`sha256:` digests as required | Premature; v0.1 fixes one format |
+| OpenAPI-only types without JSON Schema artifacts | Interop and non-TS consumers |
+| `additionalProperties` defaults true | Silent field injection / digest ambiguity |
+| Soft-strip unknown properties | Hides producer bugs; weakens binding |
+
+### D3.5 — Summary of rejections (parsers)
+
+MUST fail closed on: unsupported `protocolVersion` (D1.1); schema violation / extra properties; invalid digest format; digest mismatch on binding; non-finite or unsafe numbers; invalid status enums.
 
 ### D4 — Onchain vs offchain placement
 
@@ -240,8 +345,8 @@ Protocol package v0.1 only needs `VerificationResult.status`: `verified` | `reje
 ### Negative / tradeoffs
 
 - Existing score JSON is not identical to `EvidenceEnvelope`; adapter layer required.  
-- Canonicalization must be implemented carefully (key sort, number encoding).  
-- Multi-axis measurements need UI/API education vs single score.
+- JCS + closed schemas are strict; producers must not emit undefined/extra keys or non-finite numbers.  
+- Multi-axis measurements need UI/API education vs single score; non-numeric axes need explicit verifier mapping into numbers or disqualifications.
 
 ### Risks if rejected or delayed
 
