@@ -1,0 +1,67 @@
+{
+  "name": "@skillos/protocol",
+  "version": "0.1.0",
+  "description": "Domain-neutral offchain Arena/Evidence protocol (v0.1) — schemas, digests, and validation for SkillOS and Simpl3.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/youngstar-eth/SkillOS/tree/main/packages/protocol",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/youngstar-eth/SkillOS.git",
+    "directory": "packages/protocol"
+  },
+  "keywords": [
+    "skillos",
+    "protocol",
+    "evidence",
+    "arena",
+    "jcs",
+    "json-schema"
+  ],
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json",
+    "./schemas/*": "./schemas/*",
+    "./fixtures/*": "./fixtures/*"
+  },
+  "files": [
+    "dist",
+    "schemas",
+    "fixtures",
+    "docs",
+    "examples",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "generate-types": "tsx scripts/generate-types.ts",
+    "check-types-drift": "tsx scripts/check-types-drift.ts",
+    "build-fixtures": "tsx scripts/build-fixtures.ts",
+    "test": "tsx --test test/protocol.test.ts test/browser-smoke.test.ts",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "esbuild": "^0.25.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "protocolVersion": "0.1.0",
+  "benchmarkId": "game.2048",
+  "benchmarkVersion": "0.1.0",
+  "taskType": "game.2048",
+  "inputSchemaHash": "sha256:c754292397535e014e878dc5c87ca649b91cebba2b680cec2b5523ffae711161",
+  "evaluator": {
+    "id": "game.2048.score-adapter",
+    "version": "0.1.0",
+    "digest": "sha256:7f512e0758b142bd6bcf04325179f0f33ca6abac975409e8c9035ac9815564f7"
+  },
+  "measurements": [
+    {
+      "id": "score",
+      "name": "Game score",
+      "unit": "points",
+      "higherIsBetter": true,
+      "required": true,
+      "valueType": "number"
+    },
+    {
+      "id": "match_count_delta",
+      "name": "Match count delta",
+      "higherIsBetter": true,
+      "required": false,
+      "valueType": "number"
+    }
+  ],
+  "hardFailureRules": [
+    "invalid_score"
+  ]
+}

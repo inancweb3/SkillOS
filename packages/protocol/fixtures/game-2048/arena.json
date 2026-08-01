@@ -1,0 +1,24 @@
+{
+  "protocolVersion": "0.1.0",
+  "arenaId": "arena.game.2048",
+  "arenaVersion": "0.1.0",
+  "category": "game",
+  "entry": "open",
+  "prizeSource": "none",
+  "format": "tournament_compat",
+  "verifier": {
+    "id": "skillos.deterministic.v1",
+    "version": "0.1.0",
+    "digest": "sha256:1ac49d81b56f4a1e1adb3ebdbeab964c704ebcc0987ae9c3b3b173e252757344"
+  },
+  "resolution": "deterministic",
+  "capabilityAxes": [
+    "score"
+  ],
+  "dataTier": "public",
+  "dataRights": "public_evidence_digests_only",
+  "taskBinding": {
+    "benchmarkId": "game.2048",
+    "adapterId": "legacy-game-score"
+  }
+}

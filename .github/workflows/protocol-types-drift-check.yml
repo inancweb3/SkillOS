@@ -1,0 +1,40 @@
+# ADR 0004 discipline for protocol schema → TypeScript generation.
+name: Protocol types drift
+
+on:
+  pull_request:
+    paths:
+      - 'packages/protocol/schemas/**'
+      - 'packages/protocol/src/types.generated.ts'
+      - 'packages/protocol/scripts/generate-types.ts'
+      - 'packages/protocol/scripts/check-types-drift.ts'
+      - 'packages/protocol/package.json'
+      - '.github/workflows/protocol-types-drift-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'packages/protocol/**'
+      - '.github/workflows/protocol-types-drift-check.yml'
+
+# Least privilege: checkout + npm only (CodeQL / security baseline).
+permissions:
+  contents: read
+
+concurrency:
+  group: protocol-types-drift-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: protocol-types-drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Fail if types.generated.ts drifts from schemas
+        run: npm run check-types-drift -w @skillos/protocol

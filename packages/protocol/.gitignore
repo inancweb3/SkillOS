@@ -1,0 +1,5 @@
+# Build output — never commit (ADR 0004 discipline for generated artifacts;
+# dist is produced by `npm run build` / prepack for npm pack only).
+/dist/
+*.tgz
+node_modules/

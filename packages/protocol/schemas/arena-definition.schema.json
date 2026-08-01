@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skillos.network/protocol/v0.1/arena-definition.schema.json",
+  "title": "ArenaDefinition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocolVersion",
+    "arenaId",
+    "arenaVersion",
+    "category",
+    "entry",
+    "prizeSource",
+    "format",
+    "verifier",
+    "resolution",
+    "capabilityAxes",
+    "dataTier",
+    "dataRights"
+  ],
+  "properties": {
+    "protocolVersion": {
+      "type": "string",
+      "const": "0.1.0"
+    },
+    "arenaId": { "type": "string", "minLength": 1 },
+    "arenaVersion": { "type": "string", "minLength": 1 },
+    "category": { "type": "string", "minLength": 1 },
+    "entry": { "type": "string", "minLength": 1 },
+    "prizeSource": {
+      "type": "string",
+      "enum": ["none", "sponsor_pool", "external"]
+    },
+    "format": {
+      "type": "string",
+      "enum": ["single_attempt", "multi_attempt", "tournament_compat"]
+    },
+    "verifier": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      }
+    },
+    "resolution": {
+      "type": "string",
+      "enum": ["deterministic", "staked", "hybrid"]
+    },
+    "capabilityAxes": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "dataTier": {
+      "type": "string",
+      "enum": ["public", "restricted", "private"]
+    },
+    "dataRights": { "type": "string" },
+    "taskBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "benchmarkId": { "type": "string" },
+        "adapterId": { "type": "string" }
+      }
+    }
+  }
+}

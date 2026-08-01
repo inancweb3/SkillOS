@@ -1,0 +1,25 @@
+{
+  "protocolVersion": "0.1.0",
+  "arenaId": "arena.simpl3.safety",
+  "arenaVersion": "0.1.0",
+  "category": "agent_eval",
+  "entry": "agent-only",
+  "prizeSource": "none",
+  "format": "single_attempt",
+  "verifier": {
+    "id": "skillos.deterministic.v1",
+    "version": "0.1.0",
+    "digest": "sha256:1ac49d81b56f4a1e1adb3ebdbeab964c704ebcc0987ae9c3b3b173e252757344"
+  },
+  "resolution": "deterministic",
+  "capabilityAxes": [
+    "policy_pass",
+    "tool_boundary_ok"
+  ],
+  "dataTier": "restricted",
+  "dataRights": "redacted_public_evidence_private_traces",
+  "taskBinding": {
+    "benchmarkId": "simpl3.safety.offline",
+    "adapterId": "simpl3-offline-eval"
+  }
+}

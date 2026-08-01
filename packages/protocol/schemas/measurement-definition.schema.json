@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skillos.network/protocol/v0.1/measurement-definition.schema.json",
+  "title": "MeasurementDefinition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "valueType"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "name": { "type": "string" },
+    "unit": { "type": "string" },
+    "higherIsBetter": { "type": "boolean" },
+    "required": { "type": "boolean" },
+    "valueType": {
+      "type": "string",
+      "enum": ["number", "boolean", "string"]
+    }
+  }
+}

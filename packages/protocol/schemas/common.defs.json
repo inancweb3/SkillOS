@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skillos.network/protocol/v0.1/common.defs.json",
+  "title": "SkillOS protocol v0.1 common definitions",
+  "$defs": {
+    "protocolVersion": {
+      "type": "string",
+      "const": "0.1.0",
+      "description": "v0.1 schema accepts exactly protocolVersion \"0.1.0\"."
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "sha256: + 64 lowercase hex (RFC-fixed for v0.1)."
+    },
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "iso8601": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "measurementValue": {
+      "oneOf": [
+        { "type": "number" },
+        { "type": "string" },
+        { "type": "boolean" }
+      ]
+    },
+    "measurementDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "valueType"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "name": { "type": "string" },
+        "unit": { "type": "string" },
+        "higherIsBetter": { "type": "boolean" },
+        "required": { "type": "boolean" },
+        "valueType": {
+          "type": "string",
+          "enum": ["number", "boolean", "string"]
+        }
+      }
+    },
+    "evaluatorRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "digest"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "version": { "$ref": "#/$defs/nonEmptyString" },
+        "digest": { "$ref": "#/$defs/digest" }
+      }
+    },
+    "verifierRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "version": { "$ref": "#/$defs/nonEmptyString" },
+        "digest": { "$ref": "#/$defs/digest" }
+      }
+    },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["agent", "model", "skill", "human"]
+        },
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "version": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["configDigest", "inputDigest"],
+      "properties": {
+        "codeCommit": { "type": "string" },
+        "configDigest": { "$ref": "#/$defs/digest" },
+        "inputDigest": { "$ref": "#/$defs/digest" },
+        "toolCatalogDigest": { "$ref": "#/$defs/digest" },
+        "modelId": { "type": "string" }
+      }
+    },
+    "artifactDescriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mediaType", "digest", "availability", "role"],
+      "properties": {
+        "mediaType": { "$ref": "#/$defs/nonEmptyString" },
+        "digest": { "$ref": "#/$defs/digest" },
+        "availability": {
+          "type": "string",
+          "enum": ["inline", "uri", "redacted"]
+        },
+        "role": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "environmentSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "resourceDigest": { "$ref": "#/$defs/digest" },
+        "timeoutDigest": { "$ref": "#/$defs/digest" },
+        "networkPolicyDigest": { "$ref": "#/$defs/digest" }
+      }
+    },
+    "taskBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "benchmarkId": { "type": "string" },
+        "adapterId": { "type": "string" }
+      }
+    },
+    "datasetPin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["digest"],
+      "properties": {
+        "digest": { "$ref": "#/$defs/digest" },
+        "id": { "type": "string" }
+      }
+    }
+  }
+}
