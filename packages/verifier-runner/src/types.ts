@@ -16,7 +16,42 @@ export const EVAL_BUNDLE_PRODUCER_ID = "simpl3.offline.eval-runner" as const;
 
 /** Deterministic SkillOS verifier identity for this runner. */
 export const VERIFIER_ID = "skillos.offline.bundle-verifier" as const;
-export const VERIFIER_VERSION = "0.1.0" as const;
+
+/**
+ * Verifier implementation version bound into VerificationResult.verifierVersion
+ * and VerifierDescriptor.digest.
+ *
+ * 0.2.0 — multi-axis hard-gate catalog evaluation (union codes, execute path,
+ * evidence/body coherence, redacted report surface). Distinct from legacy 0.1.0
+ * which only projected body.hardFailure without catalog mapping.
+ *
+ * Immutable binding: VERIFIER_VERSION 0.2.0 ↔ HARD_GATE_CATALOG_VERSION 0.1.0
+ * (see VERIFIER_CATALOG_BINDING). Do not claim legacy identity for this code path.
+ */
+export const VERIFIER_VERSION = "0.2.0" as const;
+
+/** Pre-multi-axis verifier version (must not be emitted by this implementation). */
+export const LEGACY_VERIFIER_VERSION = "0.1.0" as const;
+
+/**
+ * Pinned legacy VerifierDescriptor digest for id=skillos.offline.bundle-verifier
+ * version=0.1.0 capabilities=[deterministic] protocolVersion=0.1.0.
+ * New results must not reuse this digest.
+ */
+export const LEGACY_VERIFIER_DIGEST =
+  "sha256:99102b3571cf55d2950fc6c79ade0f32a3d6effd8de58d644b1c74f0a598b474" as const;
+
+/**
+ * Immutable mapping from this verifier version to catalog / report surface versions.
+ * Protocol VerifierDescriptor cannot carry a catalog digest in v0.1 — consumers
+ * must treat verifierVersion as the policy pin.
+ */
+export const VERIFIER_CATALOG_BINDING = {
+  verifierId: VERIFIER_ID,
+  verifierVersion: VERIFIER_VERSION,
+  hardGateCatalogVersion: "0.1.0",
+  multiAxisReportVersion: "0.1.0",
+} as const;
 
 export const BUNDLE_TOOL_TRACE_FIELDS = [
   "tool",

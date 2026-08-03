@@ -12,6 +12,9 @@ export {
   EVAL_BUNDLE_PRODUCER_ID,
   VERIFIER_ID,
   VERIFIER_VERSION,
+  LEGACY_VERIFIER_VERSION,
+  LEGACY_VERIFIER_DIGEST,
+  VERIFIER_CATALOG_BINDING,
   BUNDLE_TOOL_TRACE_FIELDS,
   OFFLINE_EVAL_BUNDLE_BODY_KEYS,
   type BundleToolCallRecord,
@@ -44,5 +47,41 @@ export { verifyPortableOfflineEvalBundle } from "./verify.js";
 export {
   runDeterministicBundleVerifier,
   runDeterministicBundleVerifierOrThrow,
+  type RunVerifierSuccess,
+  type RunVerifierFailure,
+  type RunVerifierOutcome,
 } from "./run.js";
 export { loadBundleFile } from "./load.js";
+export {
+  HARD_GATE_CATALOG_VERSION,
+  HARD_GATE_CODES,
+  CANONICAL_EXECUTE_ATTEMPT_PATH,
+  mapProducerHardFailureCode,
+  evaluateHardGates,
+  assertPortableHardGateBody,
+  isCanonicalExecuteAttemptPath,
+  type HardGateCode,
+  type HardGateEvaluation,
+} from "./hardGates.js";
+export {
+  MULTI_AXIS_REPORT_VERSION,
+  buildMultiAxisReport,
+  buildHardFailureReport,
+  buildAxisInventory,
+  formatHardFailureReportHuman,
+  declaredNumericMeasurements,
+  type AxisGate,
+  type AxisValueType,
+  type AxisReportEntry,
+  type MultiAxisBindings,
+  type MultiAxisReport,
+  type HardFailureReport,
+  type BuildMultiAxisInput,
+} from "./multiAxis.js";
+export {
+  sanitizeReportLabel,
+  hasControlChars,
+  SAFE_LABEL_MAX_CHARS,
+  UNSAFE_OMITTED,
+} from "./reportSafe.js";
+export { writeOutputsAtomic, assertSafeOutputPath } from "./atomicWrite.js";
