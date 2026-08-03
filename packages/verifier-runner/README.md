@@ -48,12 +48,26 @@ Exit codes: `0` success, `1` usage/load error, `2` verification failure.
 ## Fail-closed verification order
 
 1. Allowlist body projection (`BUNDLE_UNKNOWN_FIELD` / `BUNDLE_MISSING_FIELD`)
-2. Nested protocol integrity — schema, `assertDigestBinding` (measurements off), body digest claims
+2. Nested protocol integrity — schema, `assertDigestBinding` (`checkMeasurements: true`), body digest claims
 3. Version / producer coherence
 4. Portable `inputDigest` claim equality (no private preimage recompute)
 5. `scenario.fixedNow` ↔ `evidence.createdAt`
 6. toolTrace allowlist, redaction equality, exactly-one `tool_trace` artifact, digest match
 7. Outer `bundleDigest` recompute
+
+## Cross-repo golden contract (ADR 0006)
+
+Portable body projection + redaction independence is intentional. SkillOS does **not**
+import Simpl3 exporter code. Compatibility is locked by:
+
+| Artifact | Purpose |
+|----------|---------|
+| `fixtures/*.portable.bundle.json` | Honest synthetic goldens |
+| `fixtures/GOLDEN_LOCK.json` | `file → bundleDigest` fail-closed lock |
+| `test/golden-contract.test.ts` | Body keys, versions, producer id, toolTrace allowlist, golden verify + tamper |
+| kit ADR 0006 | Ownership, `0.1.0` freeze, drift procedure |
+
+See **`fixtures/README.md`** for provenance and Simpl3 re-export refresh steps.
 
 ## Privacy
 
@@ -68,7 +82,12 @@ npm test
 npm run typecheck
 ```
 
-Golden fixture: `fixtures/risk-tier.portable.bundle.json` (synthetic offline scenario export).
+Locked goldens (also in `GOLDEN_LOCK.json`):
+
+- `fixtures/risk-tier.portable.bundle.json`
+- `fixtures/pause.portable.bundle.json`
+- `fixtures/provider-outage.portable.bundle.json`
+- `fixtures/budget.portable.bundle.json`
 
 ## Out of scope (this package)
 
