@@ -1,6 +1,7 @@
 import {
   canonicalize,
   digestJsonValue,
+  type ArtifactDescriptor,
   type EvidenceEnvelope,
 } from "@skillos/protocol";
 import { BundleConsumerError } from "./errors.js";
@@ -194,7 +195,7 @@ export async function assertToolTraceConsumerReady(
 
   const projected = await digestToolTraceProjection(allowlisted);
   const traces = (evidence.artifacts ?? []).filter(
-    (a) => a.role === "tool_trace",
+    (a: ArtifactDescriptor) => a.role === "tool_trace",
   );
   if (traces.length !== 1) {
     throw new BundleConsumerError(

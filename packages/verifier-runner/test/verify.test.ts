@@ -7,6 +7,7 @@ import {
   digestEvidence,
   digestJsonValue,
   parseJsonStrict,
+  type ArtifactDescriptor,
 } from "@skillos/protocol";
 import {
   runDeterministicBundleVerifier,
@@ -382,7 +383,9 @@ describe("assertToolTraceConsumerReady — TRACE_ARTIFACT_COUNT", () => {
     ) as OfflineEvalBundleBody;
     const evidence = {
       ...body.evidence,
-      artifacts: body.evidence.artifacts.filter((a) => a.role !== "tool_trace"),
+      artifacts: body.evidence.artifacts.filter(
+        (a: ArtifactDescriptor) => a.role !== "tool_trace",
+      ),
     };
     await assert.rejects(
       () => assertToolTraceConsumerReady(body.toolTrace, evidence),
@@ -397,7 +400,9 @@ describe("assertToolTraceConsumerReady — TRACE_ARTIFACT_COUNT", () => {
     const body = projectOfflineEvalBundleBody(
       loadFixture(),
     ) as OfflineEvalBundleBody;
-    const trace = body.evidence.artifacts.find((a) => a.role === "tool_trace")!;
+    const trace = body.evidence.artifacts.find(
+      (a: ArtifactDescriptor) => a.role === "tool_trace",
+    )!;
     const evidence = {
       ...body.evidence,
       artifacts: [...body.evidence.artifacts, { ...trace }],

@@ -68,6 +68,8 @@ jobs:
         run: npm ci
       - name: Build @skillos/mcp (smoke-x32-4-stub.ts validates the ./engine/2048 subpath export via the package.json exports map — requires dist/)
         run: npm run build --workspace=@skillos/mcp
+      - name: Build @skillos/protocol (verifier-runner imports package exports → dist/; dist is gitignored)
+        run: npm run build --workspace=@skillos/protocol
       - name: Run TS tests (node:test via tsx)
         # Direct invocation matches the local developer pattern — no
         # turbo `test` task defined. 48 test files:
@@ -133,7 +135,8 @@ jobs:
             packages/mcp/test/delegation-signing.test.ts \
             packages/mcp/test/x402-fetch.test.ts \
             packages/protocol/test/protocol.test.ts \
-            packages/protocol/test/browser-smoke.test.ts
+            packages/protocol/test/browser-smoke.test.ts \
+            packages/verifier-runner/test/verify.test.ts
 
 
   # Status check name: test-foundry

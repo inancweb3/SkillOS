@@ -60,14 +60,15 @@ async function assertManifestEvidenceIntegrity(
       evidence: body.evidence,
       checkMeasurements: true,
     });
-  } catch (err) {
+  } catch (err: unknown) {
     if (err instanceof ProtocolError) {
+      const code = err.code;
       if (
-        err.code === "UNKNOWN_MEASUREMENT" ||
-        err.code === "MISSING_REQUIRED_MEASUREMENT" ||
-        err.code === "MEASUREMENT_TYPE_MISMATCH" ||
-        err.code === "DUPLICATE_MEASUREMENT_ID" ||
-        err.code === "INVALID_INPUT"
+        code === "UNKNOWN_MEASUREMENT" ||
+        code === "MISSING_REQUIRED_MEASUREMENT" ||
+        code === "MEASUREMENT_TYPE_MISMATCH" ||
+        code === "DUPLICATE_MEASUREMENT_ID" ||
+        code === "INVALID_INPUT"
       ) {
         throw new BundleConsumerError(
           "MEASUREMENTS_INVALID",

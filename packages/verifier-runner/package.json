@@ -33,8 +33,8 @@
     "LICENSE"
   ],
   "scripts": {
-    "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "tsx --test test/**/*.test.ts",
+    "typecheck": "npm run build --workspace=@skillos/protocol && tsc --noEmit -p tsconfig.json",
+    "test": "npm run build --workspace=@skillos/protocol && tsx --test test/**/*.test.ts",
     "verify-bundle": "tsx src/cli.ts"
   },
   "dependencies": {
