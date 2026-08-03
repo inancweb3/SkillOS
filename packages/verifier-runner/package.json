@@ -1,0 +1,54 @@
+{
+  "name": "@skillos/verifier-runner",
+  "version": "0.1.0",
+  "description": "SkillOS portable offline-eval bundle consumer and deterministic verifier runner (v0.1).",
+  "type": "module",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/youngstar-eth/SkillOS/tree/main/packages/verifier-runner",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/youngstar-eth/SkillOS.git",
+    "directory": "packages/verifier-runner"
+  },
+  "keywords": [
+    "skillos",
+    "verifier",
+    "offline-eval",
+    "bundle",
+    "protocol"
+  ],
+  "sideEffects": false,
+  "bin": {
+    "skillos-verify-bundle": "./src/cli.ts"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src",
+    "fixtures",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "tsx --test test/**/*.test.ts",
+    "verify-bundle": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "@skillos/protocol": "0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "tsx": "^4.21.0",
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
