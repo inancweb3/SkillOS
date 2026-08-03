@@ -6,13 +6,25 @@ import {
   digestResult,
   digestVerifier,
   parseAndValidateSchema,
-  type BenchmarkManifest,
-  type EvidenceEnvelope,
   type VerificationResult,
   type VerifierDescriptor,
 } from "@skillos/protocol";
 import { BundleConsumerError } from "./errors.js";
 import {
+  assertPortableHardGateBody,
+  evaluateHardGates,
+} from "./hardGates.js";
+import {
+  buildHardFailureReport,
+  buildMultiAxisReport,
+  declaredNumericMeasurements,
+  type HardFailureReport,
+  type MultiAxisReport,
+} from "./multiAxis.js";
+import {
+  LEGACY_VERIFIER_DIGEST,
+  LEGACY_VERIFIER_VERSION,
+  VERIFIER_CATALOG_BINDING,
   VERIFIER_ID,
   VERIFIER_VERSION,
   type OfflineEvalBundle,
@@ -20,6 +32,26 @@ import {
   type RunVerifierOptions,
 } from "./types.js";
 import { verifyPortableOfflineEvalBundle } from "./verify.js";
+
+export type RunVerifierSuccess = {
+  ok: true;
+  bundleDigest: string;
+  body: OfflineEvalBundleBody;
+  verifier: VerifierDescriptor;
+  result: VerificationResult;
+  /** Structured multi-axis + hard-gate report bound to result digests. */
+  multiAxisReport: MultiAxisReport;
+  /** Present when hard gate rejects; null when verified. */
+  hardFailureReport: HardFailureReport | null;
+};
+
+export type RunVerifierFailure = {
+  ok: false;
+  code: string;
+  reason: string;
+};
+
+export type RunVerifierOutcome = RunVerifierSuccess | RunVerifierFailure;
 
 async function buildVerifierDescriptor(): Promise<VerifierDescriptor> {
   const body: Omit<VerifierDescriptor, "digest"> = {
@@ -33,54 +65,40 @@ async function buildVerifierDescriptor(): Promise<VerifierDescriptor> {
     digest: await digestVerifier(body),
   };
   parseAndValidateSchema(verifier, "VerifierDescriptor");
+  // Fail closed if we accidentally claim legacy identity.
+  if (verifier.version === LEGACY_VERIFIER_VERSION) {
+    throw new BundleConsumerError(
+      "BUNDLE_INVALID",
+      "refusing to emit legacy verifier version for multi-axis gate semantics",
+    );
+  }
+  if (verifier.digest === LEGACY_VERIFIER_DIGEST) {
+    throw new BundleConsumerError(
+      "BUNDLE_INVALID",
+      "refusing to emit legacy verifier digest for multi-axis gate semantics",
+    );
+  }
+  if (
+    VERIFIER_CATALOG_BINDING.verifierVersion !== VERIFIER_VERSION ||
+    VERIFIER_CATALOG_BINDING.hardGateCatalogVersion !== "0.1.0"
+  ) {
+    throw new BundleConsumerError(
+      "BUNDLE_INVALID",
+      "VERIFIER_CATALOG_BINDING out of sync with VERIFIER_VERSION / catalog",
+    );
+  }
   return verifier;
 }
 
 /**
- * Build VerificationResult.measurements only from manifest-declared definitions.
- * VerificationResult requires a number map — booleans become 0/1; strings are omitted
- * (already validated against the manifest by assertMeasurements).
- */
-function declaredNumericMeasurements(
-  manifest: BenchmarkManifest,
-  evidence: EvidenceEnvelope,
-): Record<string, number> {
-  const out: Record<string, number> = {};
-  const bag = evidence.measurements ?? {};
-  for (const def of manifest.measurements) {
-    if (!Object.prototype.hasOwnProperty.call(bag, def.id)) continue;
-    const v = bag[def.id];
-    if (typeof v === "number" && Number.isFinite(v)) {
-      out[def.id] = v;
-    } else if (typeof v === "boolean") {
-      out[def.id] = v ? 1 : 0;
-    }
-    // string measurements validated but not projected into number-only result map
-  }
-  return out;
-}
-
-/**
  * Verify a portable offline-eval bundle and emit a protocol-valid VerificationResult
- * bound to evidence + verifier digests (signature optional per v0.1).
+ * bound to evidence + verifier digests (signature optional per v0.1), plus a
+ * multi-axis / hard-failure report (SkillOS consumer surface, not protocol schema).
  */
 export async function runDeterministicBundleVerifier(
   bundle: OfflineEvalBundle | Record<string, unknown>,
   options: RunVerifierOptions = {},
-): Promise<
-  | {
-      ok: true;
-      bundleDigest: string;
-      body: OfflineEvalBundleBody;
-      verifier: VerifierDescriptor;
-      result: VerificationResult;
-    }
-  | {
-      ok: false;
-      code: string;
-      reason: string;
-    }
-> {
+): Promise<RunVerifierOutcome> {
   const verified = await verifyPortableOfflineEvalBundle(bundle);
   if (!verified.ok) {
     return verified;
@@ -99,15 +117,34 @@ export async function runDeterministicBundleVerifier(
     };
   }
 
-  const verifier = await buildVerifierDescriptor();
-  const evidenceDigest = await digestEvidence(body.evidence);
-
-  const disqualifications: string[] = [];
-  if (body.hardFailure) {
-    disqualifications.push(body.hardFailureCode ?? "hard_failure");
+  // F-001: runtime-validate gate-related portable body fields (types + coherence).
+  try {
+    assertPortableHardGateBody(body);
+  } catch (err) {
+    if (err instanceof BundleConsumerError) {
+      return { ok: false, code: err.code, reason: err.message };
+    }
+    return {
+      ok: false,
+      code: "BUNDLE_INVALID",
+      reason: err instanceof Error ? err.message : String(err),
+    };
   }
 
-  const status: VerificationResult["status"] = body.hardFailure
+  let verifier: VerifierDescriptor;
+  try {
+    verifier = await buildVerifierDescriptor();
+  } catch (err) {
+    if (err instanceof BundleConsumerError) {
+      return { ok: false, code: err.code, reason: err.message };
+    }
+    throw err;
+  }
+  const evidenceDigest = await digestEvidence(body.evidence);
+
+  const evaluation = evaluateHardGates(body);
+  const disqualifications = [...evaluation.disqualifications];
+  const status: VerificationResult["status"] = evaluation.hardFailure
     ? "rejected"
     : "verified";
 
@@ -152,12 +189,22 @@ export async function runDeterministicBundleVerifier(
     };
   }
 
+  const multiAxisReport = buildMultiAxisReport({
+    body,
+    bundleDigest,
+    result,
+    evaluation,
+  });
+  const hardFailureReport = buildHardFailureReport(multiAxisReport);
+
   return {
     ok: true,
     bundleDigest,
     body,
     verifier,
     result,
+    multiAxisReport,
+    hardFailureReport,
   };
 }
 
@@ -172,6 +219,8 @@ export async function runDeterministicBundleVerifierOrThrow(
   body: OfflineEvalBundleBody;
   verifier: VerifierDescriptor;
   result: VerificationResult;
+  multiAxisReport: MultiAxisReport;
+  hardFailureReport: HardFailureReport | null;
 }> {
   const out = await runDeterministicBundleVerifier(bundle, options);
   if (!out.ok) {
@@ -185,5 +234,7 @@ export async function runDeterministicBundleVerifierOrThrow(
     body: out.body,
     verifier: out.verifier,
     result: out.result,
+    multiAxisReport: out.multiAxisReport,
+    hardFailureReport: out.hardFailureReport,
   };
 }

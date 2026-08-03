@@ -28,6 +28,7 @@ export type BundleConsumerErrorCode =
   | "TRACE_NOT_REDACTED"
   | "MEASUREMENTS_INVALID"
   | "CLI_USAGE"
+  | "CLI_OUTPUT"
   | "LOAD_FAILED";
 
 export class BundleConsumerError extends Error {

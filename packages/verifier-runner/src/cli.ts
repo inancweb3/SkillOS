@@ -5,13 +5,25 @@
  * Usage:
  *   npx tsx src/cli.ts --in path/to/bundle.json
  *   npx tsx src/cli.ts --in path/to/bundle.json --out result.json
+ *   npx tsx src/cli.ts --in path/to/bundle.json --report
  *   cat bundle.json | npx tsx src/cli.ts --stdin
+ *
+ * Exit codes:
+ *   0  runner success — emits a protocol-valid VerificationResult
+ *      (including status=rejected when a hard gate fires)
+ *   1  usage / load error
+ *   2  verification / schema / binding / output failure (no final result or report)
+ *
+ * File outputs (--out, --report-out) are written transactionally: destinations are
+ * validated first (no symlinks/directories/collisions), exclusive temps at mode 0600
+ * are fsynced, then renamed. Any failure leaves no final result or report from this run.
  */
 
-import { writeFileSync } from "node:fs";
 import { parseJsonStrict } from "@skillos/protocol";
+import { writeOutputsAtomic } from "./atomicWrite.js";
 import { BundleConsumerError } from "./errors.js";
 import { loadBundleFile } from "./load.js";
+import { formatHardFailureReportHuman } from "./multiAxis.js";
 import { runDeterministicBundleVerifier } from "./run.js";
 
 function printUsage(): void {
@@ -20,10 +32,18 @@ function printUsage(): void {
       "skillos-verify-bundle — consume a portable offline-eval bundle",
       "",
       "Usage:",
-      "  skillos-verify-bundle --in <bundle.json> [--out <result.json>]",
-      "  skillos-verify-bundle --stdin [--out <result.json>]",
+      "  skillos-verify-bundle --in <bundle.json> [--out <result.json>] [--report]",
+      "  skillos-verify-bundle --stdin [--out <result.json>] [--report]",
       "",
-      "Exit codes: 0 success, 1 usage/load, 2 verification failure",
+      "Options:",
+      "  --report           Write multi-axis / hard-failure summary to stderr",
+      "  --report-out PATH  Write multi-axis report JSON sidecar (atomic, mode 0600)",
+      "  --verified-at ISO  Override VerificationResult.verifiedAt",
+      "",
+      "Exit codes:",
+      "  0  success (result emitted; may be status=rejected on hard gate)",
+      "  1  usage/load error",
+      "  2  verification or output failure (no final result/report files)",
       "",
     ].join("\n"),
   );
@@ -34,11 +54,15 @@ function parseArgs(argv: string[]): {
   outPath?: string;
   stdin: boolean;
   verifiedAt?: string;
+  report: boolean;
+  reportOutPath?: string;
 } {
   let inPath: string | undefined;
   let outPath: string | undefined;
   let stdin = false;
   let verifiedAt: string | undefined;
+  let report = false;
+  let reportOutPath: string | undefined;
 
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
@@ -48,6 +72,10 @@ function parseArgs(argv: string[]): {
     }
     if (a === "--stdin") {
       stdin = true;
+      continue;
+    }
+    if (a === "--report") {
+      report = true;
       continue;
     }
     if (a === "--in") {
@@ -67,6 +95,17 @@ function parseArgs(argv: string[]): {
         );
       }
       outPath = v;
+      continue;
+    }
+    if (a === "--report-out") {
+      const v = argv[++i];
+      if (!v || v.startsWith("-")) {
+        throw new BundleConsumerError(
+          "CLI_USAGE",
+          "--report-out requires a path value",
+        );
+      }
+      reportOutPath = v;
       continue;
     }
     if (a === "--verified-at") {
@@ -89,7 +128,7 @@ function parseArgs(argv: string[]): {
       "exactly one of --in <path> or --stdin is required",
     );
   }
-  return { inPath, outPath, stdin, verifiedAt };
+  return { inPath, outPath, stdin, verifiedAt, report, reportOutPath };
 }
 
 async function readStdin(): Promise<string> {
@@ -146,13 +185,46 @@ async function main(): Promise<void> {
         version: out.verifier.version,
         digest: out.verifier.digest,
       },
+      multiAxisReport: out.multiAxisReport,
+      hardFailureReport: out.hardFailureReport,
     };
     const text = JSON.stringify(payload, null, 2) + "\n";
+
+    const reportPayload = JSON.stringify(
+      {
+        multiAxisReport: out.multiAxisReport,
+        hardFailureReport: out.hardFailureReport,
+      },
+      null,
+      2,
+    ) + "\n";
+
+    // Validate + commit all file outputs before any stdout emission.
+    const fileWrites: Array<{ path: string; content: string }> = [];
     if (args.outPath) {
-      writeFileSync(args.outPath, text, { encoding: "utf8", mode: 0o600 });
-    } else {
+      fileWrites.push({ path: args.outPath, content: text });
+    }
+    if (args.reportOutPath) {
+      fileWrites.push({ path: args.reportOutPath, content: reportPayload });
+    }
+    if (fileWrites.length > 0) {
+      writeOutputsAtomic(fileWrites);
+    }
+
+    // Stdout only after successful file commit (or when no files requested).
+    if (!args.outPath) {
       process.stdout.write(text);
     }
+
+    if (args.report) {
+      process.stderr.write(
+        formatHardFailureReportHuman(
+          out.hardFailureReport,
+          out.multiAxisReport,
+        ) + "\n",
+      );
+    }
+
     process.exit(0);
   } catch (err) {
     if (err instanceof BundleConsumerError) {
@@ -163,7 +235,9 @@ async function main(): Promise<void> {
           2,
         ) + "\n",
       );
-      process.exit(err.code === "CLI_USAGE" || err.code === "LOAD_FAILED" ? 1 : 2);
+      const usageLike =
+        err.code === "CLI_USAGE" || err.code === "LOAD_FAILED";
+      process.exit(usageLike ? 1 : 2);
     }
     process.stderr.write(
       JSON.stringify(
