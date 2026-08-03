@@ -19,8 +19,10 @@
   ],
   "sideEffects": false,
   "bin": {
-    "skillos-verify-bundle": "./src/cli.ts"
+    "skillos-verify-bundle": "./src/cli.ts",
+    "skillos-advisory-benchmark": "./src/advisoryBenchmarkCli.ts"
   },
+
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
@@ -35,8 +37,10 @@
   "scripts": {
     "typecheck": "npm run build --workspace=@skillos/protocol && tsc --noEmit -p tsconfig.json",
     "test": "npm run build --workspace=@skillos/protocol && tsx --test test/**/*.test.ts",
-    "verify-bundle": "tsx src/cli.ts"
+    "verify-bundle": "tsx src/cli.ts",
+    "advisory-benchmark": "tsx src/advisoryBenchmarkCli.ts"
   },
+
   "dependencies": {
     "@skillos/protocol": "0.1.0"
   },
