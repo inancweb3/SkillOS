@@ -72,18 +72,8 @@ jobs:
         run: npm run build --workspace=@skillos/protocol
       - name: Run TS tests (node:test via tsx)
         # Direct invocation matches the local developer pattern — no
-        # turbo `test` task defined. 50 test files:
-        # 12 duel-backend (X23.2 cron-ratings, X20.1 F0 submit gate, X19
-        # schema integrity, X14.1 ext profile log, settle/reconcile),
-        # 2 ui (pure helpers; duel-result-branch + X14.1 extension-whitelist),
-        # 2 sp-engine, 1 contracts (X10b Builder Code), 1 glicko-rating,
-        # 1 anti-cheat (X20.0b F0 formula), 8 engines (Δ6 golden harnesses
-        # + registry + 2048 determinism),
-        # 9 apps/api (games, ratings, rate-limit, tournaments, scores,
-        # prepare, + PR#200 security: x402-client receipt/transfer,
-        # agents-matches wallet-bind, charge-retry-fee hermetic mocks),
-        # 8 scripts (X32-4 stub smoke + 6 Δ6 fidelity + faz0 resolver),
-        # 2 packages/mcp (delegation-signing, x402-fetch).
+        # turbo `test` task defined. Explicit path list (do not rely on
+        # shell globs). Includes verifier-runner multi-axis + advisory suite.
         # No user-controlled input is interpolated below — only fixed
         # repo-relative paths.
         run: |
@@ -137,8 +127,44 @@ jobs:
             packages/protocol/test/protocol.test.ts \
             packages/protocol/test/browser-smoke.test.ts \
             packages/verifier-runner/test/verify.test.ts \
-            packages/verifier-runner/test/golden-contract.test.ts
+            packages/verifier-runner/test/golden-contract.test.ts \
+            packages/verifier-runner/test/multi-axis.test.ts \
+            packages/verifier-runner/test/cli-atomic.test.ts \
+            packages/verifier-runner/test/advisory-benchmark.test.ts
 
+  # Status check name: advisory-benchmark
+  # Advisory offline benchmark report over locked portable goldens.
+  # Fails only on emission/tool failure — NOT because a golden row is
+  # status=rejected (hard-gate goldens are intentional evidence).
+  # Not a promotion/EXECUTE gate; artifact is evidence only.
+  advisory-benchmark:
+    name: advisory-benchmark
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Build @skillos/protocol
+        run: npm run build --workspace=@skillos/protocol
+      - name: Run advisory benchmark (locked goldens)
+        # Workspace script cwd is packages/verifier-runner — default fixtures dir applies.
+        # Write report under monorepo root for a stable artifact path.
+        working-directory: packages/verifier-runner
+        run: |
+          npx tsx src/advisoryBenchmarkCli.ts \
+            --out "${{ github.workspace }}/advisory-benchmark-report.json" \
+            --git-sha "${GITHUB_SHA}" \
+            --workflow-run-id "${GITHUB_RUN_ID}"
+      - name: Upload advisory benchmark artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: advisory-benchmark-report
+          path: advisory-benchmark-report.json
+          if-no-files-found: error
 
   # Status check name: test-foundry
   test-foundry:

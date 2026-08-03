@@ -85,3 +85,21 @@ export {
   UNSAFE_OMITTED,
 } from "./reportSafe.js";
 export { writeOutputsAtomic, assertSafeOutputPath } from "./atomicWrite.js";
+export {
+  ADVISORY_BENCHMARK_REPORT_VERSION,
+  ADVISORY_GOLDEN_FILES,
+  buildAdvisoryBenchmarkReport,
+  buildAdvisoryBenchmarkFromGoldenFixtures,
+  buildAdvisoryRowFromBundle,
+  formatAdvisoryBenchmarkHuman,
+  isTrustworthyAdvisoryReport,
+  publicErrorCode,
+  sanitizeFixtureFileLabel,
+  sanitizeCiBinding,
+  type AdvisoryNumericAxis,
+  type AdvisoryBenchmarkRow,
+  type AdvisoryBenchmarkSummary,
+  type AdvisoryBenchmarkReport,
+  type AdvisoryBenchmarkRunOptions,
+  type AdvisoryFixtureSpec,
+} from "./advisoryBenchmark.js";

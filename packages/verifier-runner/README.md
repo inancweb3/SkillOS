@@ -81,9 +81,53 @@ Provenance integrity failures still fail closed at verify/load (**exit 2**, no r
 
 - No EXECUTE path, no wallet/CDP, no Simpl3 monorepo import.
 - Digests + redacted tool traces only; no private preimage recompute.
-- Advisory CI benchmark leaderboard is a **separate** roadmap item (next).
+- Advisory CI benchmark report is **evidence only** (see below) — not promotion, not EXECUTE.
 
-## CLI
+## Advisory CI benchmark report (v0.1)
+
+Batch report over the four locked portable goldens using the deterministic verifier + multi-axis surface. Intended for **hosted CI artifact** upload and human/agent comparison of digest-bound rows.
+
+| Field | Meaning |
+|-------|---------|
+| `advisory` | always `true` |
+| `promotionAuthority` | always `false` — **no** auto config promotion |
+| `executionAuthority` | always `false` — **no** EXECUTE / wallet / Simpl3 authority |
+| `rows[]` | per-fixture status, digests, **`verifiedAt`** (effective clock bound into `resultDigest`), catalog disqualifications, numeric axes only |
+| `summary` | verified / rejected / error counts + hard-gate histogram |
+
+Each successful row records the **effective** `verifiedAt` the runner used (CLI `--verified-at` override, else `evidence.createdAt`). That value is an input to `resultDigest`; without it, two artifacts from the same tree could differ only in opaque digests. Error rows set `verifiedAt: null`.
+
+### CLI
+
+```bash
+# from monorepo root (or package dir with correct fixtures path)
+npm run advisory-benchmark --workspace=@skillos/verifier-runner -- \
+  --out advisory-benchmark-report.json \
+  --fixtures-dir packages/verifier-runner/fixtures
+
+# optional CI bindings
+npm run advisory-benchmark --workspace=@skillos/verifier-runner -- \
+  --out advisory-benchmark-report.json \
+  --git-sha "$GITHUB_SHA" \
+  --workflow-run-id "$GITHUB_RUN_ID"
+```
+
+| Exit | Meaning |
+|------|---------|
+| `0` | Trustworthy report **emitted** (rows are only `verified` and/or catalog `rejected`) |
+| `1` | Usage error |
+| `2` | Tool/load/schema/**row-error** failure — **no** normal artifact written |
+
+**Never** exit non-zero solely because a golden is hard-gate `rejected`. Any `status=error` row (missing/malformed/unreadable fixture) is **exit 2** and does not upload a trustworthy report. Public error rows are **code-only** (no raw exception text, paths, or producer diagnostics). Hosted CI job `advisory-benchmark` fails only on emission/tool/error-row failure.
+
+### Non-authority (binding)
+
+- Report ≠ promotion. Report ≠ merge gate for “all verified”.
+- Report ≠ product EXECUTE, wallet, CDP, x402, or Simpl3 mutation.
+- SkillOS remains digest/redacted-evidence consumer only.
+- Optional next roadmap item: Base Sepolia **digest** anchoring (separate task; raw/private artifacts never onchain).
+
+## CLI (single-bundle verify)
 
 ```bash
 # from package directory
