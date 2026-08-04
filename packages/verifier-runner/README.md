@@ -12,8 +12,9 @@ Consumes Simpl3 (or any conforming producer) portable offline-eval bundles **wit
 | `protocolVersion` | `0.1.0` (`@skillos/protocol`) |
 | Canonical producer id | `simpl3.offline.eval-runner` |
 | Verifier id | `skillos.offline.bundle-verifier` |
-| Verifier version | `0.2.0` (multi-axis hard-gate catalog; legacy `0.1.0` identity must not be claimed) |
-| Hard-gate catalog | `0.1.0` (immutable binding from verifier `0.2.0`) |
+| Verifier version | `0.3.0` (multi-axis + sanitized measurement ids on report surfaces; pre-sanitize `0.2.0` / legacy `0.1.0` identity must not be claimed) |
+| Hard-gate catalog | `0.1.0` (immutable binding from verifier `0.3.0`) |
+| Multi-axis report | `0.2.0` (sanitized `AxisReportEntry.id`; prior contract `0.1.0` projected raw ids) |
 
 ## API
 
@@ -43,8 +44,22 @@ SkillOS-owned consumer policy (no Simpl3 import, no protocol schema fork):
 | Surface | Role |
 |---------|------|
 | `VerificationResult` | Protocol object — numeric `measurements` only; `status` / `disqualifications` |
-| `MultiAxisReport` | Axis inventory (manifest measurements + catalog gates) bound to the same digests |
-| `HardFailureReport` | Present when hard gate fires (`status=rejected`) |
+| `MultiAxisReport` | Axis inventory + hard-gate rows bound to the same digests — produced only by `runDeterministicBundleVerifier` (and the package CLI) |
+| `HardFailureReport` | Present on `runDeterministicBundleVerifier` when a hard gate rejects (`status=rejected`) — internal full-verifier path only |
+| Public builders | **None** for synthetic multi-axis / hard-failure construction. `buildMultiAxisReport`, `buildAxisInventory`, `buildHardFailureReport`, and `formatHardFailureReportHuman` are package-internal only |
+
+### Report-seam invariant
+
+A public package symbol may emit verifier/catalog identity (`reportVersion` /
+`catalogVersion` / `verifierVersion` on multi-axis or hard-failure reports)
+**only** when its content derives from `runDeterministicBundleVerifier`.
+Caller-constructed report/result structures never reach a public
+identity-stamping path.
+
+- Sole public multi-axis / hard-failure **report seam:** `runDeterministicBundleVerifier` (and `runDeterministicBundleVerifierOrThrow`).
+- Advisory CI helpers (`buildAdvisoryRowFromBundle`, `buildAdvisoryBenchmarkReport`, …) remain public because every successful row derives from the runner — they are not a second synthetic multi-axis builder surface.
+- Internal module builders stay available to `run.ts`, the package CLI, and tests via direct module import, not the public index.
+- Public runtime surface is fail-closed via an **exhaustive reviewed export manifest** in `test/multi-axis.test.ts` (F-005): every new public runtime symbol fails CI until it is explicitly classified. Name-heuristic deny-lists are not the guard.
 
 ### Hard-gate catalog codes
 
