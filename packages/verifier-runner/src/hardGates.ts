@@ -7,7 +7,7 @@
  * Producer codes (e.g. Simpl3 EXECUTE_ATTEMPT_HARD_FAILURE) are mapped here.
  * Unknown producer codes fail closed to the generic `hard_failure` code — never dropped.
  *
- * Verifier version 0.2.0 binds this catalog immutably (see types.ts VERIFIER_CATALOG_BINDING).
+ * Verifier version 0.3.0 binds this catalog immutably (see types.ts VERIFIER_CATALOG_BINDING).
  *
  * Do not invent undetectable gates from private preimage or non-portable fields.
  * Provenance tamper remains fail-closed at verify/load; this catalog only surfaces

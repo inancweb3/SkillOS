@@ -13,17 +13,20 @@ import { BundleConsumerError } from "./errors.js";
 import {
   assertPortableHardGateBody,
   evaluateHardGates,
+  HARD_GATE_CATALOG_VERSION,
 } from "./hardGates.js";
 import {
   buildHardFailureReport,
   buildMultiAxisReport,
   declaredNumericMeasurements,
+  MULTI_AXIS_REPORT_VERSION,
   type HardFailureReport,
   type MultiAxisReport,
 } from "./multiAxis.js";
 import {
   LEGACY_VERIFIER_DIGEST,
   LEGACY_VERIFIER_VERSION,
+  PRE_SANITIZE_VERIFIER_VERSION,
   VERIFIER_CATALOG_BINDING,
   VERIFIER_ID,
   VERIFIER_VERSION,
@@ -65,11 +68,17 @@ async function buildVerifierDescriptor(): Promise<VerifierDescriptor> {
     digest: await digestVerifier(body),
   };
   parseAndValidateSchema(verifier, "VerifierDescriptor");
-  // Fail closed if we accidentally claim legacy identity.
+  // Fail closed if we accidentally claim legacy or pre-sanitize identity.
   if (verifier.version === LEGACY_VERIFIER_VERSION) {
     throw new BundleConsumerError(
       "BUNDLE_INVALID",
       "refusing to emit legacy verifier version for multi-axis gate semantics",
+    );
+  }
+  if (verifier.version === PRE_SANITIZE_VERIFIER_VERSION) {
+    throw new BundleConsumerError(
+      "BUNDLE_INVALID",
+      "refusing to emit pre-sanitize verifier version for measurement-id report projection",
     );
   }
   if (verifier.digest === LEGACY_VERIFIER_DIGEST) {
@@ -80,11 +89,12 @@ async function buildVerifierDescriptor(): Promise<VerifierDescriptor> {
   }
   if (
     VERIFIER_CATALOG_BINDING.verifierVersion !== VERIFIER_VERSION ||
-    VERIFIER_CATALOG_BINDING.hardGateCatalogVersion !== "0.1.0"
+    VERIFIER_CATALOG_BINDING.hardGateCatalogVersion !== HARD_GATE_CATALOG_VERSION ||
+    VERIFIER_CATALOG_BINDING.multiAxisReportVersion !== MULTI_AXIS_REPORT_VERSION
   ) {
     throw new BundleConsumerError(
       "BUNDLE_INVALID",
-      "VERIFIER_CATALOG_BINDING out of sync with VERIFIER_VERSION / catalog",
+      "VERIFIER_CATALOG_BINDING out of sync with VERIFIER_VERSION / catalog / report",
     );
   }
   return verifier;

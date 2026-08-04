@@ -7,6 +7,20 @@
  *
  * F-003: never copies raw producer string measurement values, raw hardFailureCode,
  * or secret/control-character labels into reports or human summaries.
+ *
+ * ## Report-seam invariant (F-004 / F-005)
+ *
+ * A public package symbol may emit verifier/catalog identity
+ * (`reportVersion` / `catalogVersion` / `verifierVersion` on multi-axis or
+ * hard-failure reports) only when content derives from
+ * `runDeterministicBundleVerifier`. Caller-constructed report/result structures
+ * never reach a public identity-stamping path.
+ *
+ * Builders in this module (`buildMultiAxisReport`, `buildAxisInventory`,
+ * `buildHardFailureReport`, `formatHardFailureReportHuman`) are module-local /
+ * package-internal only — not re-exported from `src/index.ts`. The package CLI
+ * and advisory path that consume reports do so via the runner (or internal
+ * imports), not a public synthetic builder surface.
  */
 
 import type {
@@ -14,6 +28,7 @@ import type {
   EvidenceEnvelope,
   VerificationResult,
 } from "@skillos/protocol";
+import { BundleConsumerError } from "./errors.js";
 import {
   HARD_GATE_CATALOG_VERSION,
   HARD_GATE_CODES,
@@ -21,15 +36,34 @@ import {
   type HardGateEvaluation,
 } from "./hardGates.js";
 import { sanitizeReportLabel } from "./reportSafe.js";
-import type { OfflineEvalBundleBody } from "./types.js";
+import {
+  LEGACY_VERIFIER_VERSION,
+  PRE_SANITIZE_VERIFIER_VERSION,
+  VERIFIER_VERSION,
+  type OfflineEvalBundleBody,
+} from "./types.js";
 
-export const MULTI_AXIS_REPORT_VERSION = "0.1.0" as const;
+/**
+ * Multi-axis / hard-failure report contract version.
+ *
+ * 0.2.0 — AxisReportEntry.id is sanitizeReportLabel(def.id) (fail-closed
+ * omission for unsafe labels). Distinct from 0.1.0 which projected raw def.id.
+ * Bound from VERIFIER_VERSION 0.3.0 via VERIFIER_CATALOG_BINDING.
+ */
+export const MULTI_AXIS_REPORT_VERSION = "0.2.0" as const;
+
+/** Pre-sanitize multi-axis report contract (raw def.id projection). */
+export const LEGACY_MULTI_AXIS_REPORT_VERSION = "0.1.0" as const;
 
 export type AxisGate = "pass" | "fail" | "info";
 
 export type AxisValueType = "number" | "boolean" | "string";
 
 export type AxisReportEntry = {
+  /**
+   * Sanitized measurement / gate id for report surfaces only.
+   * Producer/manifest lookup still uses the raw def.id internally.
+   */
   id: string;
   valueType: AxisValueType;
   /** Numeric projection when available (booleans → 0/1). */
@@ -136,6 +170,11 @@ function axisGateForMeasurement(
  * Build per-axis inventory from manifest.measurements + evidence bag,
  * then append catalog hard-gate rows (pass|fail).
  * String axes expose id/type/omission only — no raw values.
+ * Report `id` is always sanitizeReportLabel(def.id) — bag lookup and gate
+ * evaluation still use the raw producer/manifest id (R-1 consumer-side only).
+ *
+ * Internal-only (not exported from package index — F-005). Call only from the
+ * validated multi-axis / full-verifier path.
  */
 export function buildAxisInventory(
   manifest: BenchmarkManifest,
@@ -148,12 +187,14 @@ export function buildAxisInventory(
 
   for (const def of manifest.measurements) {
     const valueType = def.valueType as AxisValueType;
-    const has = Object.prototype.hasOwnProperty.call(bag, def.id);
-    const raw = has ? bag[def.id] : undefined;
+    // Raw id for bag lookup + hard-gate measurement matching only.
+    const rawId = def.id;
+    const has = Object.prototype.hasOwnProperty.call(bag, rawId);
+    const raw = has ? bag[rawId] : undefined;
     const projected = projectAxisNumeric(valueType, raw);
-    const gate = axisGateForMeasurement(def.id, valueType, raw, hardFailure);
+    const gate = axisGateForMeasurement(rawId, valueType, raw, hardFailure);
     axes.push({
-      id: def.id,
+      id: sanitizeReportLabel(rawId),
       valueType,
       ...projected,
       gate,
@@ -163,7 +204,7 @@ export function buildAxisInventory(
   const dq = new Set(disqualifications);
   for (const code of HARD_GATE_CODES) {
     axes.push({
-      id: `gate:${code}`,
+      id: sanitizeReportLabel(`gate:${code}`),
       valueType: "boolean",
       numericValue: dq.has(code) ? 1 : 0,
       gate: dq.has(code) ? "fail" : "pass",
@@ -182,6 +223,9 @@ export type BuildMultiAxisInput = {
 
 /**
  * Pure builder: multi-axis report bound to the same digests as VerificationResult.
+ *
+ * Internal-only (not exported from package index — F-005). Call only from the
+ * validated full-verifier path after hard-gate evaluation.
  */
 export function buildMultiAxisReport(input: BuildMultiAxisInput): MultiAxisReport {
   const { body, bundleDigest, result, evaluation } = input;
@@ -215,7 +259,78 @@ export function buildMultiAxisReport(input: BuildMultiAxisInput): MultiAxisRepor
 }
 
 /**
+ * Fail closed: only stamp current report/catalog/verifier identity when the
+ * incoming multi-axis report already claims that exact contract.
+ * Refuses legacy (0.1.0), pre-sanitize verifier (0.2.0), and any contradictory
+ * tuple rather than upgrading it to the post-sanitize identity.
+ *
+ * Runtime strings are widened for the checks so callers who forge identity via
+ * casts (public boundary) are still rejected; TypeScript-narrowed literals alone
+ * must not make legacy/pre-sanitize refuse paths appear dead.
+ */
+function assertCurrentHardFailureInputIdentity(multi: MultiAxisReport): void {
+  const reportVersion = multi.reportVersion as string;
+  const catalogVersion = multi.catalogVersion as string;
+  const verifierVersion = multi.verifierVersion as string;
+
+  // Explicit refuse of known pre-remediation identities (no silent upgrade).
+  if (
+    reportVersion === LEGACY_MULTI_AXIS_REPORT_VERSION ||
+    verifierVersion === LEGACY_VERIFIER_VERSION ||
+    verifierVersion === PRE_SANITIZE_VERIFIER_VERSION
+  ) {
+    throw new BundleConsumerError(
+      "BUNDLE_INVALID",
+      "hard-failure builder refuses legacy or pre-sanitize report identity",
+    );
+  }
+
+  if (reportVersion !== MULTI_AXIS_REPORT_VERSION) {
+    throw new BundleConsumerError(
+      "BUNDLE_INVALID",
+      `hard-failure builder refuses reportVersion ${JSON.stringify(reportVersion)}; expected ${MULTI_AXIS_REPORT_VERSION}`,
+    );
+  }
+  if (catalogVersion !== HARD_GATE_CATALOG_VERSION) {
+    throw new BundleConsumerError(
+      "BUNDLE_INVALID",
+      `hard-failure builder refuses catalogVersion ${JSON.stringify(catalogVersion)}; expected ${HARD_GATE_CATALOG_VERSION}`,
+    );
+  }
+  if (verifierVersion !== VERIFIER_VERSION) {
+    throw new BundleConsumerError(
+      "BUNDLE_INVALID",
+      `hard-failure builder refuses verifierVersion ${JSON.stringify(verifierVersion)}; expected ${VERIFIER_VERSION}`,
+    );
+  }
+}
+
+/** Clone a failed axis and re-sanitize id at the hard-failure boundary (F-003). */
+function projectFailedAxis(axis: AxisReportEntry): AxisReportEntry {
+  const projected: AxisReportEntry = {
+    id: sanitizeReportLabel(axis.id),
+    valueType: axis.valueType,
+    gate: axis.gate,
+  };
+  if (typeof axis.numericValue === "number" && Number.isFinite(axis.numericValue)) {
+    projected.numericValue = axis.numericValue;
+  }
+  if (typeof axis.omittedReason === "string") {
+    projected.omittedReason = axis.omittedReason;
+  }
+  return projected;
+}
+
+/**
  * Hard-failure report when status is rejected; null when verified.
+ *
+ * Internal-only (not exported from package index — F-004). Call only from the
+ * validated multi-axis / full-verifier path after `buildMultiAxisReport`.
+ *
+ * Boundary is fail-closed (F-003):
+ * - re-sanitizes every outgoing failedAxes[].id (never reuses caller axis objects)
+ * - refuses legacy / pre-sanitize / contradictory report·catalog·verifier tuples
+ * - stamps MULTI_AXIS_REPORT_VERSION + VERIFIER_VERSION only after identity check
  */
 export function buildHardFailureReport(
   multi: MultiAxisReport,
@@ -226,42 +341,59 @@ export function buildHardFailureReport(
   if (multi.disqualifications.length === 0 && !multi.hardFailure) {
     return null;
   }
+
+  assertCurrentHardFailureInputIdentity(multi);
+
   const disqualifications =
     multi.disqualifications.length > 0
-      ? multi.disqualifications
+      ? ([...multi.disqualifications] as HardGateCode[])
       : (["hard_failure"] as HardGateCode[]);
 
-  const failedAxes = multi.axes.filter((a) => a.gate === "fail");
+  // Project failed axes: clone + sanitize id at this boundary (do not trust caller).
+  const failedAxes = multi.axes
+    .filter((a) => a.gate === "fail")
+    .map(projectFailedAxis);
+
+  const scenarioId = sanitizeReportLabel(multi.scenarioId);
+  const decision = sanitizeReportLabel(multi.decision);
+  const hardGateSignals = multi.hardGateSignals.map((s) =>
+    sanitizeReportLabel(s),
+  );
+
   const codes = disqualifications.join(",");
   const summary = [
     `hard_failure status=rejected`,
     `disqualifications=${codes}`,
-    `scenario=${multi.scenarioId}`,
-    `decision=${multi.decision}`,
+    `scenario=${scenarioId}`,
+    `decision=${decision}`,
     multi.producerCodePresent
       ? "producerCode=present"
       : "producerCode=absent",
-    `verifier=${multi.verifierVersion}`,
-    `catalog=${multi.catalogVersion}`,
+    `verifier=${VERIFIER_VERSION}`,
+    `catalog=${HARD_GATE_CATALOG_VERSION}`,
   ].join(" ");
 
   return {
     reportVersion: MULTI_AXIS_REPORT_VERSION,
     catalogVersion: HARD_GATE_CATALOG_VERSION,
-    verifierVersion: multi.verifierVersion,
+    // Stamp current verifier identity only after input identity check above.
+    verifierVersion: VERIFIER_VERSION,
     status: "rejected",
     disqualifications,
-    bindings: multi.bindings,
-    scenarioId: multi.scenarioId,
-    decision: multi.decision,
+    bindings: { ...multi.bindings },
+    scenarioId,
+    decision,
     producerCodePresent: multi.producerCodePresent,
-    hardGateSignals: multi.hardGateSignals,
+    hardGateSignals,
     summary,
     failedAxes,
   };
 }
 
-/** Human-readable one-line summary for CLI stderr (no raw producer strings). */
+/**
+ * Human-readable one-line summary for CLI stderr (no raw producer strings).
+ * Internal-only (not exported from package index — F-005). CLI imports module-local.
+ */
 export function formatHardFailureReportHuman(
   report: HardFailureReport | null,
   multi: MultiAxisReport,

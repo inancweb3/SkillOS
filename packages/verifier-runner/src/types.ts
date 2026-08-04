@@ -21,17 +21,29 @@ export const VERIFIER_ID = "skillos.offline.bundle-verifier" as const;
  * Verifier implementation version bound into VerificationResult.verifierVersion
  * and VerifierDescriptor.digest.
  *
- * 0.2.0 — multi-axis hard-gate catalog evaluation (union codes, execute path,
- * evidence/body coherence, redacted report surface). Distinct from legacy 0.1.0
- * which only projected body.hardFailure without catalog mapping.
+ * 0.3.0 — multi-axis report surface sanitizes measurement ids via
+ * sanitizeReportLabel (fail-closed omission for unsafe labels). Distinct from
+ * 0.2.0 which projected raw def.id onto AxisReportEntry.id.
  *
- * Immutable binding: VERIFIER_VERSION 0.2.0 ↔ HARD_GATE_CATALOG_VERSION 0.1.0
- * (see VERIFIER_CATALOG_BINDING). Do not claim legacy identity for this code path.
+ * 0.2.0 — multi-axis hard-gate catalog evaluation (union codes, execute path,
+ * evidence/body coherence, redacted report surface) without id sanitization.
+ * Distinct from legacy 0.1.0 which only projected body.hardFailure without
+ * catalog mapping.
+ *
+ * Immutable binding: VERIFIER_VERSION 0.3.0 ↔ HARD_GATE_CATALOG_VERSION 0.1.0
+ * ↔ multiAxisReportVersion 0.2.0 (see VERIFIER_CATALOG_BINDING). Do not claim
+ * legacy or pre-sanitize identity for this code path.
  */
-export const VERIFIER_VERSION = "0.2.0" as const;
+export const VERIFIER_VERSION = "0.3.0" as const;
 
 /** Pre-multi-axis verifier version (must not be emitted by this implementation). */
 export const LEGACY_VERIFIER_VERSION = "0.1.0" as const;
+
+/**
+ * Multi-axis catalog verifier without measurement-id sanitization on report
+ * surfaces (must not be emitted by this implementation).
+ */
+export const PRE_SANITIZE_VERIFIER_VERSION = "0.2.0" as const;
 
 /**
  * Pinned legacy VerifierDescriptor digest for id=skillos.offline.bundle-verifier
@@ -45,12 +57,15 @@ export const LEGACY_VERIFIER_DIGEST =
  * Immutable mapping from this verifier version to catalog / report surface versions.
  * Protocol VerifierDescriptor cannot carry a catalog digest in v0.1 — consumers
  * must treat verifierVersion as the policy pin.
+ *
+ * multiAxisReportVersion 0.2.0 = sanitized AxisReportEntry.id projection
+ * (pre-sanitize multi-axis report contract was 0.1.0).
  */
 export const VERIFIER_CATALOG_BINDING = {
   verifierId: VERIFIER_ID,
   verifierVersion: VERIFIER_VERSION,
   hardGateCatalogVersion: "0.1.0",
-  multiAxisReportVersion: "0.1.0",
+  multiAxisReportVersion: "0.2.0",
 } as const;
 
 export const BUNDLE_TOOL_TRACE_FIELDS = [

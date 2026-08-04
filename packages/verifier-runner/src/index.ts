@@ -1,6 +1,21 @@
 /**
  * @skillos/verifier-runner — portable offline-eval bundle consumer +
  * deterministic verifier runner. No Simpl3 import; digests + redacted traces only.
+ *
+ * ## Report-seam invariant (F-004 / F-005)
+ *
+ * A public symbol may emit verifier/catalog identity on multi-axis or
+ * hard-failure reports only when content derives from
+ * `runDeterministicBundleVerifier`. Caller-constructed report/result structures
+ * never reach a public identity-stamping path.
+ *
+ * Synthetic multi-axis / hard-failure builders and formatters are intentionally
+ * not re-exported. Advisory-benchmark helpers that derive rows from the runner
+ * remain public and are out of that deny surface.
+ *
+ * Public runtime exports are fail-closed by an exhaustive reviewed manifest in
+ * `test/multi-axis.test.ts` (F-005). Adding a new public symbol without updating
+ * that classification fails the package tests — do not rely on name heuristics.
  */
 
 export {
@@ -13,6 +28,7 @@ export {
   VERIFIER_ID,
   VERIFIER_VERSION,
   LEGACY_VERIFIER_VERSION,
+  PRE_SANITIZE_VERIFIER_VERSION,
   LEGACY_VERIFIER_DIGEST,
   VERIFIER_CATALOG_BINDING,
   BUNDLE_TOOL_TRACE_FIELDS,
@@ -65,10 +81,10 @@ export {
 } from "./hardGates.js";
 export {
   MULTI_AXIS_REPORT_VERSION,
-  buildMultiAxisReport,
-  buildHardFailureReport,
-  buildAxisInventory,
-  formatHardFailureReportHuman,
+  LEGACY_MULTI_AXIS_REPORT_VERSION,
+  // Report-seam invariant: synthetic multi-axis / hard-failure builders are
+  // intentionally NOT re-exported (F-004 / F-005). Public reports only via
+  // runDeterministicBundleVerifier. See module header + README.
   declaredNumericMeasurements,
   type AxisGate,
   type AxisValueType,
