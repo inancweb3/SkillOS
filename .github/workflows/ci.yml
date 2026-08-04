@@ -130,7 +130,8 @@ jobs:
             packages/verifier-runner/test/golden-contract.test.ts \
             packages/verifier-runner/test/multi-axis.test.ts \
             packages/verifier-runner/test/cli-atomic.test.ts \
-            packages/verifier-runner/test/advisory-benchmark.test.ts
+            packages/verifier-runner/test/advisory-benchmark.test.ts \
+            packages/private-runner-isolation/test/isolation.test.ts
 
   # Status check name: advisory-benchmark
   # Advisory offline benchmark report over locked portable goldens.
