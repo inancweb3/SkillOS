@@ -3,7 +3,7 @@
 **Status:** Accepted — 2026-05-15
 **Sprint:** X15 (Phase 2 mainnet critical path)
 **Deciders:** Founder + X20 marathon agent session (post-marathon morning review)
-**Related:** `docs/sprints/X15-agent-x402-retry-payments.md`, ADR 0002 (dual-profile pipeline split, audit reproducibility prerequisite)
+**Related:** `docs/sprints/X15-agent-x402-retry-payments.md`, ADR 0002 (dual-profile pipeline split, audit reproducibility prerequisite); **see also ADR 0009** (SkillOS rail-neutral testnet billing adapter — dry-run only; do not config-flip funded settle into SkillOS core).
 
 ## Context
 
