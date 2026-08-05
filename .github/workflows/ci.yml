@@ -134,7 +134,8 @@ jobs:
             packages/verifier-runner/test/advisory-benchmark.test.ts \
             packages/private-runner-isolation/test/isolation.test.ts \
             packages/private-workspace-analytics/test/privacy.test.ts \
-            packages/x402-testnet-billing/test/billing.test.ts
+            packages/x402-testnet-billing/test/billing.test.ts \
+            packages/agentkit-skill-adapter/test/adapter.test.ts
 
   # Status check name: advisory-benchmark
   # Advisory offline benchmark report over locked portable goldens.
