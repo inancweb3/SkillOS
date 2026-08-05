@@ -119,3 +119,38 @@ export {
   type AdvisoryBenchmarkRunOptions,
   type AdvisoryFixtureSpec,
 } from "./advisoryBenchmark.js";
+/**
+ * RC benchmark evidence consumer/verify (Simpl3 producer contract 0.2.0).
+ * Evidence/digest input only — never promotion/EXECUTE authority.
+ * RC-02: expectedCodeCommit mandatory for verified-ready.
+ */
+export {
+  RC_EVIDENCE_KIND,
+  RC_EVIDENCE_VERSION,
+  RC_MODES,
+  RC_GATE_IDS,
+  RC_EVIDENCE_REQUIRED_KEYS,
+  RC_DEFAULT_MAX_AGE_MS,
+  RC_DEFAULT_MAX_FUTURE_SKEW_MS,
+  RC_EVIDENCE_VERIFIER_ID,
+  RC_EVIDENCE_VERIFIER_VERSION,
+  normalizeCodeCommit,
+  validateRcBenchmarkEvidence,
+  isRcBenchmarkVerifiedReady,
+  verifyRcBenchmarkEvidence,
+  isPromotionAuthorizedByRcBenchmarkEvidence,
+  type RcMode,
+  type RcGateId,
+  type RcGateResult,
+  type RcGateMap,
+  type RcBenchmarkEvidence,
+  type RcValidateOptions,
+  type RcVerifiedReadyOptions,
+  type RcValidateOk,
+  type RcValidateFail,
+  type RcValidateResult,
+  type RcReadyOk,
+  type RcReadyFail,
+  type RcReadyResult,
+  type RcVerifyOutcome,
+} from "./rcEvidence.js";
