@@ -1,0 +1,19 @@
+{
+  "kind": "simpl3.rc.benchmark.evidence",
+  "version": "0.2.0",
+  "mode": "fixture",
+  "codeCommit": "84beb043f4f060372e2aeb94153473bc38c03a2d",
+  "createdAt": "2026-08-05T12:00:00.000Z",
+  "benchmarkEqualsPromote": false,
+  "executeEnabled": false,
+  "promoteAuthorized": false,
+  "gates": {
+    "noEnvTracked": { "ok": true, "detail": "fixture" },
+    "typecheck": { "ok": true, "detail": "fixture" },
+    "unitTests": { "ok": true, "detail": "fixture" },
+    "executeHardOff": { "ok": true, "detail": "fixture" }
+  },
+  "qualityPass": true,
+  "rcBenchmarkSatisfied": true,
+  "note": "Redacted SkillOS fixture — mode=fixture never verified-ready. success ≠ promote/EXECUTE."
+}

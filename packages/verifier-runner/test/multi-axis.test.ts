@@ -1005,7 +1005,8 @@ type PublicExportClass =
   | "tool-trace"
   | "project"
   | "report-safe"
-  | "atomic-write";
+  | "atomic-write"
+  | "rc-evidence";
 
 /**
  * Exhaustive manifest of approved public runtime exports.
@@ -1069,6 +1070,22 @@ const REVIEWED_PUBLIC_RUNTIME_EXPORTS: Readonly<
   loadBundleFile: "load",
   verifyPortableOfflineEvalBundle: "verify",
   projectOfflineEvalBundleBody: "project",
+
+  // RC benchmark evidence consumer (evidence input only; never promote/EXECUTE)
+  RC_DEFAULT_MAX_AGE_MS: "constant",
+  RC_DEFAULT_MAX_FUTURE_SKEW_MS: "constant",
+  RC_EVIDENCE_KIND: "constant",
+  RC_EVIDENCE_REQUIRED_KEYS: "constant",
+  RC_EVIDENCE_VERSION: "constant",
+  RC_EVIDENCE_VERIFIER_ID: "constant",
+  RC_EVIDENCE_VERIFIER_VERSION: "constant",
+  RC_GATE_IDS: "constant",
+  RC_MODES: "constant",
+  isPromotionAuthorizedByRcBenchmarkEvidence: "rc-evidence",
+  isRcBenchmarkVerifiedReady: "rc-evidence",
+  normalizeCodeCommit: "rc-evidence",
+  validateRcBenchmarkEvidence: "rc-evidence",
+  verifyRcBenchmarkEvidence: "rc-evidence",
 
   // redaction
   isSecretValue: "redaction",

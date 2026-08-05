@@ -131,6 +131,7 @@ jobs:
             packages/verifier-runner/test/multi-axis.test.ts \
             packages/verifier-runner/test/cli-atomic.test.ts \
             packages/verifier-runner/test/advisory-benchmark.test.ts \
+            packages/verifier-runner/test/rc-evidence.test.ts \
             packages/private-runner-isolation/test/isolation.test.ts \
             packages/private-workspace-analytics/test/privacy.test.ts
 
