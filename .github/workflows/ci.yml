@@ -76,6 +76,18 @@ jobs:
         # shell globs). Includes verifier-runner multi-axis + advisory suite.
         # No user-controlled input is interpolated below — only fixed
         # repo-relative paths.
+        #
+        # CI-ORD-1 ordered region (load-bearing adjacency on the path list):
+        #   Enforcer (single owner):
+        #     packages/private-runner-isolation/test/ci-test-path-order.test.ts
+        #     symbol: assertCiTestPathOrderChain
+        #     suite: "CI-ORD-1 — single-owner test-path order"
+        #   Chain MUST stay contiguous:
+        #     advisory-benchmark → isolation → privacy
+        #   Do NOT insert paths between those three; do NOT re-add neighbour
+        #   guards in isolation.test.ts / privacy.test.ts (multi-owner = CI-F1).
+        #   Update the enforcer atomically if this chain changes.
+        #   (Comments here — not inside the continued path lines — keep `\` intact.)
         run: |
           npx tsx --test \
             packages/duel-backend/test/cron-settle.test.ts \
@@ -134,6 +146,7 @@ jobs:
             packages/verifier-runner/test/advisory-benchmark.test.ts \
             packages/private-runner-isolation/test/isolation.test.ts \
             packages/private-workspace-analytics/test/privacy.test.ts \
+            packages/private-runner-isolation/test/ci-test-path-order.test.ts \
             packages/x402-testnet-billing/test/billing.test.ts \
             packages/agentkit-skill-adapter/test/adapter.test.ts \
             packages/erc8004-reputation/test/reputation.test.ts
