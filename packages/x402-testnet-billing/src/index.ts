@@ -43,6 +43,8 @@ export {
   authorizeBilling,
   settleBilling,
   settleLiveFundedBilling,
+  isBillingQuote,
+  isBillingAuthorization,
   isBillingReceipt,
   dryRunBilling,
 } from "./adapter.js";

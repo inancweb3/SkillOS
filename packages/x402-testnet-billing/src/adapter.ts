@@ -17,9 +17,12 @@ import {
 } from "./types.js";
 
 /**
- * Module-private mint registry for receipts (same pattern as monorepo configPromotion).
- * Shape-only forgeries never pass isBillingReceipt.
+ * Module-private mint registries (same pattern as monorepo configPromotion / F-1).
+ * Shape-only forgeries never pass type guards; skip-chain predecessors fail closed.
+ * X-1: quote → authorize → settle is integrity-bound by object identity.
  */
+const QUOTE_REGISTRY = new WeakSet<object>();
+const AUTH_REGISTRY = new WeakSet<object>();
 const RECEIPT_REGISTRY = new WeakSet<object>();
 
 function deny<T>(
@@ -106,6 +109,7 @@ export function quoteBilling(
     funded: false,
     liveSettle: false,
   });
+  QUOTE_REGISTRY.add(quote);
   return { ok: true, value: quote };
 }
 
@@ -127,8 +131,15 @@ export function authorizeBilling(
       ? (quote as { ok: true; value: BillingQuote }).value
       : (quote as BillingQuote);
 
-  if (q == null || typeof q !== "object" || q.kind !== "skillos.billing.quote") {
+  if (q == null || typeof q !== "object" || Array.isArray(q) || q.kind !== "skillos.billing.quote") {
     return deny("QUOTE_INVALID", "quote is required");
+  }
+  // X-1: only quotes minted by quoteBilling may authorize (hand-built bags fail closed).
+  if (!QUOTE_REGISTRY.has(q)) {
+    return deny(
+      "QUOTE_INVALID",
+      "quote not minted by quoteBilling (chain provenance)",
+    );
   }
   if (q.contractVersion !== BILLING_CONTRACT_VERSION) {
     return deny("QUOTE_INVALID", "quote contract version mismatch");
@@ -158,6 +169,7 @@ export function authorizeBilling(
     funded: false,
     liveSettle: false,
   });
+  AUTH_REGISTRY.add(auth);
   return { ok: true, value: auth };
 }
 
@@ -183,9 +195,17 @@ export function settleBilling(
   if (
     a == null ||
     typeof a !== "object" ||
+    Array.isArray(a) ||
     a.kind !== "skillos.billing.authorization"
   ) {
     return deny("AUTH_DENIED", "authorization is required");
+  }
+  // X-1: only authorizations minted by authorizeBilling may settle.
+  if (!AUTH_REGISTRY.has(a)) {
+    return deny(
+      "AUTH_DENIED",
+      "authorization not minted by authorizeBilling (chain provenance)",
+    );
   }
   if (a.authorized !== true) {
     return deny("AUTH_DENIED", "authorization not granted");
@@ -236,6 +256,41 @@ export function settleLiveFundedBilling(
   return deny(
     "FUNDED_PATH_UNREACHABLE",
     "live funded settle is unreachable by construction (ADR 0009)",
+  );
+}
+
+/** Type guard: only quotes minted by quoteBilling (X-1). */
+export function isBillingQuote(value: unknown): value is BillingQuote {
+  if (value == null || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+  if (!QUOTE_REGISTRY.has(value)) {
+    return false;
+  }
+  const v = value as Record<string, unknown>;
+  return (
+    v.kind === "skillos.billing.quote" &&
+    v.funded === false &&
+    v.liveSettle === false
+  );
+}
+
+/** Type guard: only authorizations minted by authorizeBilling (X-1). */
+export function isBillingAuthorization(
+  value: unknown,
+): value is BillingAuthorization {
+  if (value == null || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+  if (!AUTH_REGISTRY.has(value)) {
+    return false;
+  }
+  const v = value as Record<string, unknown>;
+  return (
+    v.kind === "skillos.billing.authorization" &&
+    v.authorized === true &&
+    v.funded === false &&
+    v.liveSettle === false
   );
 }
 

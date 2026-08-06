@@ -8,6 +8,9 @@ Rail-neutral **testnet / dry-run** billing adapter for SkillOS (ADR 0009).
 - Allowed modes: `dry_run`, `fixture` only
 - Offline-safe: no network, facilitator, or USDC required
 - Funded / mainnet / live settle **unreachable by construction**
+- **Chain provenance (X-1):** quotes, authorizations, and receipts are WeakSet-minted;
+  hand-built bags fail `isBillingQuote` / `isBillingAuthorization` / `isBillingReceipt`
+  and cannot skip quote→authorize→settle
 
 ## What it is not
 

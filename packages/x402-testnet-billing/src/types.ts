@@ -40,6 +40,10 @@ export type BillingRequest = {
   readonly subjectDigest?: string;
 };
 
+/**
+ * Price quote. Object identity is registered in a private WeakSet at mint
+ * (quoteBilling). Shape-only forgeries fail isBillingQuote and cannot authorize.
+ */
 export type BillingQuote = {
   readonly kind: "skillos.billing.quote";
   readonly contractVersion: typeof BILLING_CONTRACT_VERSION;
@@ -53,6 +57,10 @@ export type BillingQuote = {
   readonly liveSettle: false;
 };
 
+/**
+ * Authorization. Minted only from a registry-backed quote (authorizeBilling).
+ * Shape-only forgeries fail isBillingAuthorization and cannot settle.
+ */
 export type BillingAuthorization = {
   readonly kind: "skillos.billing.authorization";
   readonly contractVersion: typeof BILLING_CONTRACT_VERSION;
@@ -68,6 +76,7 @@ export type BillingAuthorization = {
 /**
  * Simulated settlement receipt. Object identity is registered in a private
  * WeakSet at mint time — shape-only forgeries are rejected by isBillingReceipt.
+ * Settle only accepts authorizations from AUTH mint registry (X-1 chain).
  */
 export type BillingReceipt = {
   readonly kind: "skillos.billing.receipt";
