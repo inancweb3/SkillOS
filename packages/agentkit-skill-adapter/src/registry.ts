@@ -1,5 +1,6 @@
 /**
  * In-process skill registry — versioned registration, no live handlers.
+ * A-1: skill storage is module-private (WeakMap), not a mutable map on the registry.
  */
 
 import { createAdapterConfig, parseAdapterConfig } from "./config.js";
@@ -13,18 +14,38 @@ import {
   type SkillToolDescriptor,
 } from "./types.js";
 
+/**
+ * Public registry handle. Skill inventory is **not** a property of this object —
+ * storage lives in a module-private WeakMap (A-1). Holders cannot inject via
+ * `_skills.set(...)` or assign a substitute Map.
+ */
 export type SkillRegistry = {
   readonly kind: "skillos.agentkit.skill.registry";
   readonly config: AdapterConfig;
-  /** Opaque map — mutated only via package functions. */
-  readonly _skills: Map<string, SkillRecord>;
 };
+
+/**
+ * Module-private skill storage keyed by registry object identity.
+ * Unreachable from outside this module — makes external map mutation unrepresentable.
+ */
+const SKILL_STORE = new WeakMap<object, Map<string, SkillRecord>>();
 
 function deny<T>(
   denyCode: import("./types.js").AdapterDenyCode,
   reason: string,
 ): AdapterResult<T> {
   return { ok: false, denyCode, reason };
+}
+
+function skillsOf(registry: SkillRegistry): Map<string, SkillRecord> | null {
+  if (
+    registry == null ||
+    typeof registry !== "object" ||
+    registry.kind !== "skillos.agentkit.skill.registry"
+  ) {
+    return null;
+  }
+  return SKILL_STORE.get(registry) ?? null;
 }
 
 function normalizeTool(
@@ -69,11 +90,11 @@ export function createSkillRegistry(
     cfg = parsed.value;
   }
 
-  const reg: SkillRegistry = {
-    kind: "skillos.agentkit.skill.registry",
+  const reg: SkillRegistry = Object.freeze({
+    kind: "skillos.agentkit.skill.registry" as const,
     config: cfg,
-    _skills: new Map(),
-  };
+  });
+  SKILL_STORE.set(reg, new Map());
   return { ok: true, value: reg };
 }
 
@@ -93,11 +114,8 @@ export function registerSkill(
   input: SkillRegistrationInput,
   opts?: { registeredAt?: string },
 ): AdapterResult<SkillRecord> {
-  if (
-    registry == null ||
-    typeof registry !== "object" ||
-    registry.kind !== "skillos.agentkit.skill.registry"
-  ) {
+  const store = skillsOf(registry);
+  if (!store) {
     return deny("REGISTRY_UNAVAILABLE", "skill registry is required");
   }
   if (input == null || typeof input !== "object") {
@@ -143,7 +161,7 @@ export function registerSkill(
         : null,
     registeredAt,
   });
-  registry._skills.set(record.skillId, record);
+  store.set(record.skillId, record);
   return { ok: true, value: record };
 }
 
@@ -151,17 +169,14 @@ export function getSkill(
   registry: SkillRegistry,
   skillId: string,
 ): AdapterResult<SkillRecord> {
-  if (
-    registry == null ||
-    typeof registry !== "object" ||
-    registry.kind !== "skillos.agentkit.skill.registry"
-  ) {
+  const store = skillsOf(registry);
+  if (!store) {
     return deny("REGISTRY_UNAVAILABLE", "skill registry is required");
   }
   if (typeof skillId !== "string" || skillId.trim().length === 0) {
     return deny("SKILL_INVALID", "skillId must be non-empty");
   }
-  const rec = registry._skills.get(skillId.trim());
+  const rec = store.get(skillId.trim());
   if (!rec) {
     return deny("SKILL_MISSING", `skill not registered: ${skillId.trim()}`);
   }
@@ -169,12 +184,9 @@ export function getSkill(
 }
 
 export function listSkills(registry: SkillRegistry): readonly SkillRecord[] {
-  if (
-    registry == null ||
-    typeof registry !== "object" ||
-    registry.kind !== "skillos.agentkit.skill.registry"
-  ) {
+  const store = skillsOf(registry);
+  if (!store) {
     return Object.freeze([]);
   }
-  return Object.freeze([...registry._skills.values()]);
+  return Object.freeze([...store.values()]);
 }
