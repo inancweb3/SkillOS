@@ -1147,31 +1147,7 @@ describe("P3-02 — registryEpoch bound into decisions", () => {
   });
 });
 
-describe("F-004 — CI test path is an argument to tsx, not a bare command", () => {
-  it("workflow lists isolation test after continued advisory-benchmark path", async () => {
-    const { readFileSync } = await import("node:fs");
-    const { resolve, dirname } = await import("node:path");
-    const { fileURLToPath } = await import("node:url");
-    const here = dirname(fileURLToPath(import.meta.url));
-    const ciPath = resolve(here, "../../../.github/workflows/ci.yml");
-    const text = readFileSync(ciPath, "utf8");
-    // Extract the test-ts run block's path list region.
-    const marker = "packages/verifier-runner/test/advisory-benchmark.test.ts";
-    const idx = text.indexOf(marker);
-    assert.ok(idx >= 0, "advisory-benchmark path present");
-    const lineEnd = text.indexOf("\n", idx);
-    const line = text.slice(text.lastIndexOf("\n", idx) + 1, lineEnd);
-    // P3-03: correct pattern is backslash then optional whitespace at EOL.
-    assert.match(line, /\\\s*$/, "advisory-benchmark line must end with \\");
-    assert.ok(line.trimEnd().endsWith("\\"), "missing line continuation before isolation test");
-
-    const nextLine = text.slice(lineEnd + 1, text.indexOf("\n", lineEnd + 1));
-    assert.match(
-      nextLine,
-      /packages\/private-runner-isolation\/test\/isolation\.test\.ts/,
-    );
-    // Next line must NOT be a bare executable path alone without being under the same list.
-    // It should not start at column 0 as a shell command — in YAML it is indented under run: |
-    assert.ok(/^\s+packages\//.test(nextLine), "isolation path must remain indented list arg");
-  });
-});
+// CI-ORD-1: ordered adjacency for the load-bearing test-ts tail lives solely in
+// `./ci-test-path-order.test.ts` (`assertCiTestPathOrderChain`). Do not re-add
+// neighbour guards here — multi-owner adjacency is the failure mode that caused
+// CI-F1 / CI-ORD-1.

@@ -1837,29 +1837,6 @@ describe("P3 — package LICENSE is full Apache-2.0 with SkillOS attribution", (
   });
 });
 
-describe("CI — test path listed after private-runner-isolation", () => {
-  it("workflow lists privacy test after isolation path with line continuation", async () => {
-    const { readFileSync } = await import("node:fs");
-    const { resolve, dirname } = await import("node:path");
-    const { fileURLToPath } = await import("node:url");
-    const here = dirname(fileURLToPath(import.meta.url));
-    const ciPath = resolve(here, "../../../.github/workflows/ci.yml");
-    const text = readFileSync(ciPath, "utf8");
-    const marker = "packages/private-runner-isolation/test/isolation.test.ts";
-    const idx = text.indexOf(marker);
-    assert.ok(idx >= 0, "isolation path present");
-    const lineEnd = text.indexOf("\n", idx);
-    const line = text.slice(text.lastIndexOf("\n", idx) + 1, lineEnd);
-    assert.match(line, /\\\s*$/, "isolation line must end with \\");
-
-    const nextLine = text.slice(lineEnd + 1, text.indexOf("\n", lineEnd + 1));
-    assert.match(
-      nextLine,
-      /packages\/private-workspace-analytics\/test\/privacy\.test\.ts/,
-    );
-    assert.ok(
-      /^\s+packages\//.test(nextLine),
-      "privacy path must remain indented list arg",
-    );
-  });
-});
+// CI-ORD-1: ordered adjacency for the load-bearing test-ts tail lives solely in
+// `packages/private-runner-isolation/test/ci-test-path-order.test.ts`
+// (`assertCiTestPathOrderChain`). Do not re-add neighbour guards here.
