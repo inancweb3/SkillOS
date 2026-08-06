@@ -8,6 +8,8 @@ Versioned **AgentKit / Agent Skill** adapter for SkillOS (Faz 3 · plan #9).
 - **Rail-neutral:** no Coinbase AgentKit, CDP, wallet, or x402 client as a runtime dependency
 - **Dry-run / fixture** modes only for successful offline invoke
 - Hard non-grants: EXECUTE, promote, wallet spend, `x402_funded_spend`, pause override
+- **Registry encapsulation (A-1):** skill inventory is module-private (`WeakMap`);
+  holders of `SkillRegistry` cannot inject via a public `_skills` Map
 
 ## What it is not
 

@@ -141,6 +141,96 @@ describe("skill registry", () => {
   });
 });
 
+/**
+ * A-1 — registry skill storage encapsulation (architect residual).
+ * External `_skills` mutation must be unrepresentable / ignored.
+ */
+describe("A-1 registry encapsulation (WeakMap store)", () => {
+  it("registry has no reachable _skills map property", () => {
+    const reg = createSkillRegistryOrThrow("dry_run");
+    const bag = reg as unknown as Record<string, unknown>;
+    assert.equal(Object.prototype.hasOwnProperty.call(bag, "_skills"), false);
+    assert.equal(bag._skills, undefined);
+    assert.equal(Object.isFrozen(reg), true);
+  });
+
+  it("legacy inject path reg._skills.set cannot list or get injected skill", () => {
+    const reg = createSkillRegistryOrThrow("dry_run");
+    const bag = reg as unknown as {
+      _skills?: Map<string, { skillId: string; version: string; tools: readonly unknown[]; description: null; registeredAt: string }>;
+    };
+    // Pre-A-1 attack: mutate public Map. After A-1, property is absent.
+    const inject = Object.freeze({
+      skillId: "injected.evil",
+      version: "9.9.9",
+      tools: Object.freeze([{ toolId: "pwn", description: "inject" }]),
+      description: null,
+      registeredAt: "2026-08-06T00:00:00.000Z",
+    });
+    if (bag._skills && typeof bag._skills.set === "function") {
+      bag._skills.set("injected.evil", inject);
+    } else {
+      // Attempt assign + set (frozen registry should block assign).
+      try {
+        bag._skills = new Map([["injected.evil", inject]]);
+      } catch {
+        // freeze expected
+      }
+    }
+    const list = listSkills(reg);
+    assert.equal(
+      list.some((s) => s.skillId === "injected.evil"),
+      false,
+      "injected skill must not appear in listSkills",
+    );
+    const g = getSkill(reg, "injected.evil");
+    assert.equal(g.ok, false);
+    if (!g.ok) assert.equal(g.denyCode, "SKILL_MISSING");
+  });
+
+  it("hand-built registry object has empty inventory (no store entry)", () => {
+    const forged = Object.freeze({
+      kind: "skillos.agentkit.skill.registry" as const,
+      config: createSkillRegistryOrThrow("dry_run").config,
+      _skills: new Map([
+        [
+          "forged.skill",
+          Object.freeze({
+            skillId: "forged.skill",
+            version: "1.0.0",
+            tools: Object.freeze([{ toolId: "t", description: "d" }]),
+            description: null,
+            registeredAt: "2026-08-06T00:00:00.000Z",
+          }),
+        ],
+      ]),
+    });
+    assert.deepEqual(listSkills(forged as never), []);
+    const g = getSkill(forged as never, "forged.skill");
+    assert.equal(g.ok, false);
+    if (!g.ok) assert.equal(g.denyCode, "REGISTRY_UNAVAILABLE");
+    const r = registerSkill(forged as never, {
+      skillId: "x",
+      version: "1.0.0",
+      tools: [{ toolId: "t", description: "d" }],
+    });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.equal(r.denyCode, "REGISTRY_UNAVAILABLE");
+  });
+
+  it("legitimate registerSkill still works after encapsulation", () => {
+    const reg = createSkillRegistryOrThrow("dry_run");
+    const r = registerSkill(reg, {
+      skillId: "skillos.legit",
+      version: "0.2.0",
+      tools: [{ toolId: "ok", description: "ok tool" }],
+    });
+    assert.equal(r.ok, true);
+    assert.equal(listSkills(reg).length, 1);
+    assert.equal(listSkills(reg)[0]?.skillId, "skillos.legit");
+  });
+});
+
 describe("dry-run invoke", () => {
   it("invokes registered tool with simulated receipt", () => {
     const reg = regWithEcho();
