@@ -17,11 +17,15 @@ import {
   billingAuthorityFlags,
   createBillingConfig,
   dryRunBilling,
+  isBillingAuthorization,
+  isBillingQuote,
   isBillingReceipt,
   parseBillingConfig,
   quoteBilling,
   settleBilling,
   settleLiveFundedBilling,
+  type BillingAuthorization,
+  type BillingQuote,
   type BillingRequest,
 } from "../src/index.js";
 
@@ -257,6 +261,143 @@ describe("authorize/settle chain integrity", () => {
       createBillingConfig({ mode: "dry_run" }),
     );
     assert.equal(s.ok, false);
+  });
+});
+
+/**
+ * X-1 — quote→authorize→settle mint registry (architect residual).
+ * Hand-built predecessors must not mint registry-backed receipts.
+ */
+describe("X-1 chain provenance (WeakSet mint)", () => {
+  const cfg = createBillingConfig({ mode: "dry_run" });
+
+  function handBuiltQuote(overrides?: Partial<BillingQuote>): BillingQuote {
+    return {
+      kind: "skillos.billing.quote",
+      contractVersion: BILLING_CONTRACT_VERSION,
+      requestId: "never_quoted",
+      amountAtomic: 999_999_999n,
+      asset: "USDC",
+      mode: "dry_run",
+      subjectDigest: null,
+      funded: false,
+      liveSettle: false,
+      ...overrides,
+    };
+  }
+
+  function handBuiltAuth(
+    overrides?: Partial<BillingAuthorization>,
+  ): BillingAuthorization {
+    return {
+      kind: "skillos.billing.authorization",
+      contractVersion: BILLING_CONTRACT_VERSION,
+      requestId: "never_quoted",
+      amountAtomic: 999_999_999n,
+      asset: "USDC",
+      mode: "dry_run",
+      authorized: true,
+      funded: false,
+      liveSettle: false,
+      ...overrides,
+    };
+  }
+
+  it("hand-built quote bag cannot authorize", () => {
+    const forged = handBuiltQuote();
+    assert.equal(isBillingQuote(forged), false);
+    const a = authorizeBilling(forged, cfg);
+    assert.equal(a.ok, false);
+    if (!a.ok) {
+      assert.equal(a.denyCode, "QUOTE_INVALID");
+      assert.match(a.reason, /chain provenance|not minted/i);
+    }
+  });
+
+  it("spread clone of real quote cannot authorize", () => {
+    const q = quoteBilling(req, cfg);
+    assert.equal(q.ok, true);
+    if (!q.ok) return;
+    assert.equal(isBillingQuote(q.value), true);
+    const clone = { ...q.value };
+    assert.equal(isBillingQuote(clone), false);
+    const a = authorizeBilling(clone, cfg);
+    assert.equal(a.ok, false);
+    if (!a.ok) assert.equal(a.denyCode, "QUOTE_INVALID");
+  });
+
+  it("hand-built authorization cannot settle or mint receipt", () => {
+    const forged = handBuiltAuth();
+    assert.equal(isBillingAuthorization(forged), false);
+    const s = settleBilling(forged, cfg, { decidedAt: NOW });
+    assert.equal(s.ok, false);
+    if (!s.ok) {
+      assert.equal(s.denyCode, "AUTH_DENIED");
+      assert.match(s.reason, /chain provenance|not minted/i);
+    }
+    assert.equal(isBillingReceipt(forged as unknown as object), false);
+  });
+
+  it("spread clone of real auth cannot settle", () => {
+    const q = quoteBilling(req, cfg);
+    assert.equal(q.ok, true);
+    if (!q.ok) return;
+    const a = authorizeBilling(q.value, cfg);
+    assert.equal(a.ok, true);
+    if (!a.ok) return;
+    assert.equal(isBillingAuthorization(a.value), true);
+    const clone = { ...a.value };
+    assert.equal(isBillingAuthorization(clone), false);
+    const s = settleBilling(clone, cfg, { decidedAt: NOW });
+    assert.equal(s.ok, false);
+    if (!s.ok) assert.equal(s.denyCode, "AUTH_DENIED");
+  });
+
+  it("skip-quote path cannot mint receipt for never-quoted amount", () => {
+    // Architect repro: hand-built auth with huge amount / never-quoted requestId.
+    const skip = handBuiltAuth({
+      requestId: "req_never_quoted",
+      amountAtomic: 999_999_999n,
+    });
+    const s = settleBilling(skip, cfg, { decidedAt: NOW });
+    assert.equal(s.ok, false);
+    if (!s.ok) {
+      assert.equal(s.denyCode, "AUTH_DENIED");
+    }
+    // No registry-backed receipt exists for this identity.
+    assert.equal(isBillingReceipt(skip as unknown as object), false);
+  });
+
+  it("minted chain still settles; receipt remains registry-backed", () => {
+    const q = quoteBilling(req, cfg);
+    assert.equal(q.ok, true);
+    if (!q.ok) return;
+    const a = authorizeBilling(q, cfg);
+    assert.equal(a.ok, true);
+    if (!a.ok) return;
+    const s = settleBilling(a, cfg, { decidedAt: NOW });
+    assert.equal(s.ok, true);
+    if (!s.ok) return;
+    assert.equal(isBillingReceipt(s.value), true);
+    assert.equal(s.value.requestId, req.requestId);
+    assert.equal(s.value.amountAtomic, req.amountAtomic);
+    assert.equal(s.value.promoteAuthorized, false);
+    assert.equal(s.value.executeEnabled, false);
+  });
+
+  it("JSON round-trip of quote is not mint-backed", () => {
+    const q = quoteBilling(req, cfg);
+    assert.equal(q.ok, true);
+    if (!q.ok) return;
+    // bigint not JSON-safe — reconstruct shape without registry identity
+    const bag = handBuiltQuote({
+      requestId: q.value.requestId,
+      amountAtomic: q.value.amountAtomic,
+      subjectDigest: q.value.subjectDigest,
+    });
+    assert.equal(isBillingQuote(bag), false);
+    const a = authorizeBilling(bag, cfg);
+    assert.equal(a.ok, false);
   });
 });
 

@@ -55,10 +55,13 @@ Public operations (pure, offline-safe):
 
 | Op | Meaning |
 |----|---------|
-| `quoteBilling` | Produce a price quote from a request + config (no network) |
-| `authorizeBilling` | Validate that a dry-run/fixture mode may proceed |
-| `settleBilling` | Record a **simulated** settlement receipt (dry-run/fixture only) |
-| `denyLiveFundedSettle` | Structural non-grant for any live/funded attempt |
+| `quoteBilling` | Produce a price quote from a request + config (no network); mints into package WeakSet |
+| `authorizeBilling` | Accept **only** mint-registry quotes; produce auth mint for settle |
+| `settleBilling` | Accept **only** mint-registry authorizations; record simulated receipt mint |
+| `settleLiveFundedBilling` | Structural non-grant for any live/funded attempt (always deny) |
+| `isBillingQuote` / `isBillingAuthorization` / `isBillingReceipt` | Identity guards — shape-only forgeries fail closed |
+
+Chain integrity (X-1): quote → authorize → settle is bound by object identity. Hand-built quote/auth bags cannot produce a registry-backed receipt.
 
 Interface types do **not** name a required facilitator URL, CDP key, or chain-specific client. A future live rail would be a **different package or explicit later ADR**, not a mode flip here.
 
