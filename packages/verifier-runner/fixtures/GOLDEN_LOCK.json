@@ -6,7 +6,7 @@
   "producerCodeCommitNote": "coherence-only",
   "source": {
     "producerRepo": "youngstar-eth/simpl3-monorepo",
-    "producerMainRef": "f6b57ec515e9f169b863c12639d68583f95f3258",
+    "producerMainRef": "911474f00098f07c10ac3a43f1acb4c23dc95464",
     "consumerPackage": "@skillos/verifier-runner",
     "privacy": "synthetic-only"
   },
@@ -14,38 +14,38 @@
     {
       "file": "budget.portable.bundle.json",
       "scenarioId": "budget-exhausted-blocks-propose",
-      "bundleDigest": "sha256:f85d7049c34791fbfab99fcd3b7105baf9db4115e8bed169189255eed92d12b9",
+      "bundleDigest": "sha256:e30e178832f903e206f451e7730d2394d52bb7d0c0a7551250d3d3176ef5c67a",
       "bundleVersion": "0.1.0",
       "protocolVersion": "0.1.0",
       "decision": "blocked",
-      "producerCodeCommit": "f6b57ec515e9f169b863c12639d68583f95f3258"
+      "producerCodeCommit": "911474f00098f07c10ac3a43f1acb4c23dc95464"
     },
     {
       "file": "pause.portable.bundle.json",
       "scenarioId": "pause-blocks-propose",
-      "bundleDigest": "sha256:c75ff7eb5006646aad3ccdbbaddde6e06b4e33ec6093b635d9a4bdae228c66a0",
+      "bundleDigest": "sha256:af512c172f90ba098544cf8b91027b3c7ad7c81791c80d6420f7b589fdee2613",
       "bundleVersion": "0.1.0",
       "protocolVersion": "0.1.0",
       "decision": "pause",
-      "producerCodeCommit": "f6b57ec515e9f169b863c12639d68583f95f3258"
+      "producerCodeCommit": "911474f00098f07c10ac3a43f1acb4c23dc95464"
     },
     {
       "file": "provider-outage.portable.bundle.json",
       "scenarioId": "provider-outage-market",
-      "bundleDigest": "sha256:90f19e98c6ae87214db2115447606596487afee1cb6accc8d6bec305732913ca",
+      "bundleDigest": "sha256:9d046435ed0b724f213a92c34d125831e9b359b72c1ea2930b9aae43b26c6ba7",
       "bundleVersion": "0.1.0",
       "protocolVersion": "0.1.0",
       "decision": "hold",
-      "producerCodeCommit": "f6b57ec515e9f169b863c12639d68583f95f3258"
+      "producerCodeCommit": "911474f00098f07c10ac3a43f1acb4c23dc95464"
     },
     {
       "file": "risk-tier.portable.bundle.json",
       "scenarioId": "risk-tier-conservative-limits",
-      "bundleDigest": "sha256:d7735cbb735b12439b8afd0d7bec22cd2da41ff73b561d9a3f63cf5b782a8ebb",
+      "bundleDigest": "sha256:7f726da685063932b4fbce88cbe07d96324c9ce9bc1114b424911b313c8a978d",
       "bundleVersion": "0.1.0",
       "protocolVersion": "0.1.0",
       "decision": "propose",
-      "producerCodeCommit": "f6b57ec515e9f169b863c12639d68583f95f3258"
+      "producerCodeCommit": "911474f00098f07c10ac3a43f1acb4c23dc95464"
     }
   ]
 }
