@@ -30,7 +30,7 @@ exact equality in `test/golden-contract.test.ts` (no prose/substring checks).
 | Lock field | Machine value | Meaning |
 |------------|---------------|---------|
 | `source.producerRepo` | `youngstar-eth/simpl3-monorepo` | Reviewed producer repository id |
-| `source.producerMainRef` | `f6b57ec515e9f169b863c12639d68583f95f3258` | Producer tip at export (coherence pin) |
+| `source.producerMainRef` | `911474f00098f07c10ac3a43f1acb4c23dc95464` | Producer tip at export (coherence pin) |
 | `source.consumerPackage` | `@skillos/verifier-runner` | This consumer package |
 | `source.privacy` | `synthetic-only` | Synthetic offline eval only; no live user/portfolio/production data |
 | `producerCodeCommitNote` | `coherence-only` | `codeCommit` is internal document coherence, not external trust |
