@@ -14,7 +14,7 @@
     {
       "file": "budget.portable.bundle.json",
       "scenarioId": "budget-exhausted-blocks-propose",
-      "bundleDigest": "sha256:426d990dc20cb55e8c4a8785bc9d13d04848e73e87be902288f81d8d7df608e3",
+      "bundleDigest": "sha256:f85d7049c34791fbfab99fcd3b7105baf9db4115e8bed169189255eed92d12b9",
       "bundleVersion": "0.1.0",
       "protocolVersion": "0.1.0",
       "decision": "blocked",
@@ -23,7 +23,7 @@
     {
       "file": "pause.portable.bundle.json",
       "scenarioId": "pause-blocks-propose",
-      "bundleDigest": "sha256:b4ddb37755186670a0822f982ee7f1037b2fe67ca59671170f206b314af28272",
+      "bundleDigest": "sha256:c75ff7eb5006646aad3ccdbbaddde6e06b4e33ec6093b635d9a4bdae228c66a0",
       "bundleVersion": "0.1.0",
       "protocolVersion": "0.1.0",
       "decision": "pause",
@@ -32,7 +32,7 @@
     {
       "file": "provider-outage.portable.bundle.json",
       "scenarioId": "provider-outage-market",
-      "bundleDigest": "sha256:f833b7ca531c58d7f7392bb6a4ee05029321a8cfec967b273772b7bc6694fc93",
+      "bundleDigest": "sha256:90f19e98c6ae87214db2115447606596487afee1cb6accc8d6bec305732913ca",
       "bundleVersion": "0.1.0",
       "protocolVersion": "0.1.0",
       "decision": "hold",
@@ -41,7 +41,7 @@
     {
       "file": "risk-tier.portable.bundle.json",
       "scenarioId": "risk-tier-conservative-limits",
-      "bundleDigest": "sha256:b271d3d4f797f200c782aa75c77522c5d253522c08517b3fa83bcade922a91a6",
+      "bundleDigest": "sha256:d7735cbb735b12439b8afd0d7bec22cd2da41ff73b561d9a3f63cf5b782a8ebb",
       "bundleVersion": "0.1.0",
       "protocolVersion": "0.1.0",
       "decision": "propose",
