@@ -31,7 +31,7 @@
     "jose": "^6.2.0",
     "siwe": "^3.0.0",
     "viem": "^2.55.10",
-    "zod": "^4.4.0"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@hono/node-server": "^2.0.12",
