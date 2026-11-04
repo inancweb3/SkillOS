@@ -8,7 +8,7 @@
   "functions": {
     "api/index.ts": {
       "maxDuration": 240,
-      "includeFiles": "../../node_modules/{hono,viem,abitype,@noble,@scure,@adraffy,ws,isows,ox,eventemitter3,@hono/zod-validator,openapi3-ts,siwe,jose,ethers,aes-js,@spruceid,@stablelib,@supabase,@anthropic-ai,@vercel,iceberg-js,tslib,uuid,uri-js,apg-js}/**"
+      "includeFiles": "../../node_modules/{hono,viem,abitype,@noble,@scure,@adraffy,ws,isows,ox,eventemitter3,@hono/zod-validator,openapi3-ts,siwe,jose,ethers,aes-js,@spruceid,@stablelib,@supabase,@anthropic-ai,openai,@vercel,iceberg-js,tslib,uuid,uri-js,apg-js}/**"
     }
   }
 }

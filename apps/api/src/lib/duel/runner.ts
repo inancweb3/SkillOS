@@ -33,7 +33,7 @@ import { dataSuffixForGame } from '../games.js';
 import { getSupabaseClient } from '../supabase.js';
 import {
   type AgentMoveContext,
-  getNextMove,
+  type AgentMoveResult,
 } from './anthropic-agent.js';
 import {
   type Board,
@@ -47,20 +47,58 @@ import {
 
 // Match budget. Phase 2 readiness: play to authentic game-end, not an
 // arbitrary 24-move cap. Vercel function maxDuration is 240s (vercel.json);
-// MATCH_TIMEOUT_MS fires 20s before that so finalizeRun + maybeSubmitOnChain
-// land before the runtime kills the function. STUCK_THRESHOLD detects an
-// agent looping the same legal direction (e.g. repeated 'down') — 5 in a row
-// forfeits, since 2048 rarely needs 5 identical moves to make progress.
-// MAX_DEFENSIVE_MOVES is a sanity bound that should never trip given the
-// terminal checks above; if it does, the run is recorded as 'error'.
-const MAX_DURATION_SECONDS = 240;
-const MATCH_TIMEOUT_MS = (MAX_DURATION_SECONDS - 20) * 1000;
+// MATCH_TIMEOUT_MS fires a margin before that so finalizeRun +
+// maybeSubmitOnChain land before the runtime kills the function. Both the
+// duration and the margin are env-tunable (B4): the Hermes 405B brain is
+// slower per move than Haiku, so the wall-clock budget is exposed as config
+// rather than hardcoding a shrink. Defaults preserve the original Claude-path
+// timing (220s usable). NOTE: MATCH_MAX_DURATION_SECONDS must stay <= the
+// Vercel function maxDuration in vercel.json — to give Hermes more headroom,
+// raise BOTH in lockstep at deploy time (out of scope here). STUCK_THRESHOLD
+// detects an agent looping the same legal direction (e.g. repeated 'down') —
+// 5 in a row forfeits, since 2048 rarely needs 5 identical moves to make
+// progress. MAX_DEFENSIVE_MOVES is a sanity bound that should never trip given
+// the terminal checks above; if it does, the run is recorded as 'error'.
+const MAX_DURATION_SECONDS = numFromEnv('MATCH_MAX_DURATION_SECONDS', 240);
+const TIMEOUT_MARGIN_SECONDS = numFromEnv('MATCH_TIMEOUT_MARGIN_SECONDS', 20);
+const MATCH_TIMEOUT_MS = Math.max(0, (MAX_DURATION_SECONDS - TIMEOUT_MARGIN_SECONDS) * 1000);
 const STUCK_THRESHOLD = 5;
 const MAX_DEFENSIVE_MOVES = 10_000;
 const WINNING_TILE = 2048;
 const CHALLENGE_ESCROW_ADDRESS = '0x52e5E45456DeC882048b430a968Cda6061575be0';
 
 type EndReason = 'win' | 'game_over' | 'timeout' | 'stuck' | 'error';
+
+type GetNextMoveFn = (ctx: AgentMoveContext) => Promise<AgentMoveResult>;
+
+/**
+ * Parse a positive number from env, falling back to `fallback` when unset,
+ * blank, or non-finite. Used to expose the wall-clock match budget (B4).
+ */
+function numFromEnv(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (raw === undefined || raw.trim() === '') return fallback;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
+/**
+ * Brain selector. AGENT_BRAIN picks the per-move move generator:
+ *   'hermes' → OpenRouter Hermes 3 (./hermes-agent.js)
+ *   anything else, incl. unset → Claude (./anthropic-agent.js), the default.
+ * Both branches use literal import() specifiers so the prepare-bundle / NFT
+ * trace can statically discover both modules. Resolved once per match (before
+ * the move loop), never per move.
+ */
+async function loadBrain(): Promise<GetNextMoveFn> {
+  const brain = (process.env.AGENT_BRAIN ?? 'claude').toLowerCase();
+  if (brain === 'hermes') {
+    const mod = await import('./hermes-agent.js');
+    return mod.getNextMove;
+  }
+  const mod = await import('./anthropic-agent.js');
+  return mod.getNextMove;
+}
 
 export interface StartSoloInput {
   game: '2048';
@@ -127,6 +165,12 @@ export async function runSoloMatch(args: RunSoloMatchArgs): Promise<void> {
       .from('duel_runs')
       .update({ status: 'running' })
       .eq('id', args.runId);
+
+    // Resolve the configured brain once (Claude default / Hermes via
+    // AGENT_BRAIN). getNextMove keeps the same { direction, reasoning,
+    // latencyMs } contract regardless of which brain answers, so the move
+    // loop, duel_moves insert, and on-chain submit below are unchanged.
+    const getNextMove = await loadBrain();
 
     const init = createInitialBoard(args.seed);
     let board: Board = init.board;

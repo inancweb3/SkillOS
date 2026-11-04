@@ -11,6 +11,7 @@
     "smoke": "tsx test/smoke.ts",
     "smoke:x2": "tsx test/smoke-x2.ts",
     "smoke:x5": "tsx test/smoke-x5.ts",
+    "hermes:dryrun": "tsx scripts/hermes-dryrun.ts",
     "build:vercel": "scripts/prepare-bundle.sh",
     "deploy:prod": "npm run build:vercel && vercel deploy --prebuilt --prod --archive=tgz"
   },
@@ -29,6 +30,7 @@
     "ethers": "^6.17.0",
     "hono": "^4.12.33",
     "jose": "^6.2.0",
+    "openai": "^4.77.0",
     "siwe": "^3.0.0",
     "viem": "^2.55.10",
     "zod": "^4.4.0"
